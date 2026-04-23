@@ -1,4 +1,4 @@
-import os, time, cv2, psutil, requests, json, base64, pygame, subprocess
+import os, time, cv2, psutil, requests, json, base64, subprocess
 import speech_recognition as sr
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +11,7 @@ class SairaUltimateMachine:
     def __init__(self, api_key):
         self.api_key = api_key
         self.client = Groq(api_key=self.api_key)
-        self.model_text = "llama-3.3-70b-versatile"
+        self.model_text = "llama-3.1-8b-instant"
         self.model_vision = "llama-3.2-11b-vision-preview"
         
         # डायरेक्टरी सेटअप
@@ -24,7 +24,7 @@ class SairaUltimateMachine:
         
         self.memory = self.recall_and_migrate_memory()
         self.is_active = True
-        pygame.mixer.init()
+        #pygame.mixer.init()
 
     # --- जार्विस स्टाइल सेल्फ-लर्निंग (Self-Evolution) ---
     def acquire_new_skill(self, intent):
@@ -58,17 +58,7 @@ class SairaUltimateMachine:
         with open(self.vector_db_path, 'w', encoding='utf-8') as f:
             json.dump(self.memory[-500:], f, ensure_ascii=False, indent=4)
 
-    def speak(self, text):
-        print(f"🤖 [Saira]: {text}")
-        try:
-            tts = gTTS(text=text, lang='hi')
-            tts.save('saira_voice.mp3')
-            pygame.mixer.music.load('saira_voice.mp3')
-            pygame.mixer.music.play()
-            while pygame.mixer.music.get_busy(): time.sleep(0.05)
-            pygame.mixer.music.unload()
-            os.remove('saira_voice.mp3')
-        except: pass
+
 
     def hardware_monitor(self):
         return f"CPU: {psutil.cpu_percent()}% | RAM: {psutil.virtual_memory().percent}%"
