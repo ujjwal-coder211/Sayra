@@ -2,6 +2,7 @@ flask
 groq
 requests
 gtts
+beautifulsoup4
 psutil
 opencv-python-headless
 matplotlib
