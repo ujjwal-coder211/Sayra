@@ -2,12 +2,12 @@ flask
 groq
 requests
 gtts
-beautifulsoup4
-tensorflow
-scikit-learn
 psutil
 opencv-python-headless
 matplotlib
 numpy
 SpeechRecognition
 gunicorn
+beautifulsoup4
+tensorflow
+scikit-learn
