@@ -6,12 +6,10 @@ from datetime import datetime
 app = Flask(__name__)
 
 # --- API KEY & BRIDGE SETUP ---
-# रेंडर के Environment Variables से की उठाना सबसे सुरक्षित है
 API_KEY = os.environ.get("GROQ_API_KEY", "gsk_your_default_here")
 
 try:
     from main import SairaUltimateMachine
-    # की (key) पास करना ज़रूरी है
     saira_core = SairaUltimateMachine(API_KEY)
     BRIDGE_ACTIVE = True
 except Exception as e:
@@ -23,6 +21,18 @@ except Exception as e:
 @app.route('/')
 def index():
     return render_template('login.html')
+
+# --- ये रहा तुम्हारा नया लॉगिन लॉजिक ---
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    password = data.get('password')
+    
+    # यहाँ तुम अपनी पसंद का पासवर्ड बदल सकते हो
+    if password == "UJJWAL_SAIRA": 
+        return jsonify({"success": True})
+    else:
+        return jsonify({"success": False, "message": "एक्सेस डिनाइड: मास्टर की गलत है!"})
 
 @app.route('/dashboard')
 def dashboard():
@@ -38,13 +48,9 @@ def chat():
 
     if BRIDGE_ACTIVE:
         try:
-            # ध्यान दें: brain_engine को जवाब return करना चाहिए, सिर्फ बोलना नहीं
             response = saira_core.brain_engine(query)
-            
-            # अगर brain_engine कुछ return नहीं कर रहा, तो एक fallback मैसेज दें
             if not response:
                 response = "निर्देश प्रोसेस कर लिया गया है, मास्टर उज्ज्वल।"
-                
             return jsonify({"reply": response})
         except Exception as e:
             return jsonify({"reply": f"Neural Bridge Error: {str(e)}"})
@@ -60,6 +66,5 @@ def status():
     })
 
 if __name__ == "__main__":
-    # रेंडर के लिए 0.0.0.0 और पोर्ट सेटिंग अनिवार्य है
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
