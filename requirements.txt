@@ -2,7 +2,6 @@ flask
 groq
 requests
 gtts
-pygame
 psutil
 opencv-python-headless
 matplotlib
