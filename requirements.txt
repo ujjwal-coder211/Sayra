@@ -3,6 +3,8 @@ groq
 requests
 gtts
 beautifulsoup4
+tensorflow
+scikit-learn
 psutil
 opencv-python-headless
 matplotlib
