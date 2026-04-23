@@ -1,94 +1,111 @@
 import os, time, cv2, psutil, requests, json, base64, subprocess
-import speech_recognition as sr
-import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf  # Heavy Neural Calculations
 from datetime import datetime
 from groq import Groq
-from gtts import gTTS
 from bs4 import BeautifulSoup
+from sklearn.metrics.pairwise import cosine_similarity # For Memory Retrieval
 
 class SairaUltimateMachine:
     def __init__(self, api_key):
         self.api_key = api_key
         self.client = Groq(api_key=self.api_key)
         self.model_text = "llama-3.1-8b-instant"
-        self.model_vision = "llama-3.2-11b-vision-preview"
         
-        # डायरेक्टरी सेटअप
+        # Paths & Memory
         self.base_dir = "Saira_Sovereign_OS"
-        self.graph_dir = os.path.join(self.base_dir, "Neural_Graphics")
         self.vector_db_path = os.path.join(self.base_dir, "absolute_memory_db.json")
-        
         if not os.path.exists(self.base_dir): os.makedirs(self.base_dir)
-        if not os.path.exists(self.graph_dir): os.makedirs(self.graph_dir)
         
         self.memory = self.recall_and_migrate_memory()
         self.is_active = True
-        #pygame.mixer.init()
 
-    # --- जार्विस स्टाइल सेल्फ-लर्निंग (Self-Evolution) ---
-    def acquire_new_skill(self, intent):
-        """अगर कोई फीचर मिसिंग है, तो सायरा इंटरनेट से लॉजिक ढूंढकर खुद को अपग्रेड करेगी।"""
-        self.speak(f"सर, {intent} के लिए मेरे पास डायरेक्ट मॉड्यूल नहीं है। मैं रिसर्च करके लॉजिक डेवलप कर रही हूँ।")
-        search_query = f"python code logic for {intent}"
-        data_source = self.web_scraper(search_query)
+    def speak(self, text):
+        """Bridge safety: Output is routed to the dashboard"""
+        print(f"Saira Engine: {text}")
+
+    # --- 1. RECURSIVE LEARNING & EVOLUTION ---
+    def self_evolve(self, goal):
+        """Recursive Autonomous Agent: खुद के लॉजिक को बार-बार सुधारना"""
+        print(f"[*] Initiating Recursive Evolution for: {goal}")
+        search_results = self.web_scraper(f"advanced logic for {goal}")
         
-        evolution_prompt = f"Develop a Pythonic solution for: {intent}. Context: {data_source}. Output only the core logic."
-        new_logic = self.client.chat.completions.create(
-            messages=[{"role": "user", "content": evolution_prompt}],
-            model=self.model_text
-        ).choices[0].message.content
-        
-        # इसे इटरनल मेमोरी में सेव करना ताकि अगली बार सायरा को पता हो
-        self.save_eternal_memory(f"Skill_Acquisition_{intent}", new_logic)
-        return new_logic
+        evolution_prompt = f"""
+        Objective: Create a recursive solution for {goal}.
+        Context: {search_results}
+        Task: Break this into sub-tasks and write Python logic.
+        """
+        try:
+            new_logic = self.client.chat.completions.create(
+                messages=[{"role": "user", "content": evolution_prompt}],
+                model=self.model_text
+            ).choices[0].message.content
+            self.save_eternal_memory(f"Skill_{goal}", new_logic)
+            return new_logic
+        except: return "Evolution stalled due to API limits."
 
-    def recall_and_migrate_memory(self):
-        combined_data = []
-        if os.path.exists(self.vector_db_path):
-            try:
-                with open(self.vector_db_path, 'r', encoding='utf-8') as f:
-                    combined_data = json.load(f)
-            except: pass
-        return combined_data
+    # --- 2. VECTOR MEMORY RETRIEVAL (The 'Sikha Hua' Feature) ---
+    def retrieve_relevant_memory(self, query):
+        """वेक्टर डेटाबेस से पिछली सीखी हुई चीज़ें ढूंढना"""
+        if not self.memory: return ""
+        # यहाँ हम पिछली यादों को छानते हैं
+        for entry in reversed(self.memory):
+            if any(word in entry['query'] for word in query.split()[:3]):
+                return f"\n[RECALLED MEMORY]: Previous logic used: {entry['response'][:200]}"
+        return ""
 
-    def save_eternal_memory(self, q, a):
-        entry = {"timestamp": str(datetime.now()), "query": q, "response": a, "hw": self.hardware_monitor()}
-        self.memory.append(entry)
-        with open(self.vector_db_path, 'w', encoding='utf-8') as f:
-            json.dump(self.memory[-500:], f, ensure_ascii=False, indent=4)
+    # --- 3. HEAVY CALCULATION ENGINE (TensorFlow) ---
+    def neural_compute(self, data_array):
+        """TensorFlow का उपयोग करके भारी कैलकुलेशन करना"""
+        try:
+            tensor_data = tf.constant(data_array)
+            result = tf.reduce_mean(tensor_data).numpy()
+            return f"Neural Computation Result: {result}"
+        except: return "TF Engine Busy."
 
-
+    def web_scraper(self, query):
+        """Learning Engine: इंटरनेट से जानकारी माइन करना"""
+        try:
+            r = requests.get(f"https://www.google.com/search?q={query}", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+            soup = BeautifulSoup(r.text, "html.parser")
+            return " ".join([h.text for h in soup.find_all('h3')][:3])
+        except: return "Web Learning Offline."
 
     def hardware_monitor(self):
         return f"CPU: {psutil.cpu_percent()}% | RAM: {psutil.virtual_memory().percent}%"
 
-    def web_scraper(self, query):
+    def save_eternal_memory(self, q, a):
         try:
-            r = requests.get(f"https://www.google.com/search?q={query}", headers={"User-Agent": "Mozilla/5.0"})
-            soup = BeautifulSoup(r.text, "html.parser")
-            return " ".join([h.text for h in soup.find_all('h3')][:3])
-        except: return "Global Data Mining Offline."
+            entry = {"timestamp": str(datetime.now()), "query": q, "response": a}
+            self.memory.append(entry)
+            with open(self.vector_db_path, 'w', encoding='utf-8') as f:
+                json.dump(self.memory[-1000:], f, ensure_ascii=False, indent=4)
+        except: pass
 
+    def recall_and_migrate_memory(self):
+        if os.path.exists(self.vector_db_path):
+            try:
+                with open(self.vector_db_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except: return []
+        return []
+
+    # --- MAIN BRAIN ENGINE ---
     def brain_engine(self, query):
-        if not self.is_active and "जाग जाओ" not in query: return "Saira is in Sleep Mode."
-
-        # जार्विस 'Intent' एनालिसिस प्रॉम्प्ट
+        # पिछली याददाश्त ताज़ा करना (Retrieval)
+        past_knowledge = self.retrieve_relevant_memory(query)
+        
         system_prompt = f"""
         Identity: Saira Sovereign AGI. 
         Master: Ujjwal. 
-        Core: Jarvis-Protocol. 
-        Instruction: Understand intent. If a physical task or invention is required, initiate logic. 
-        Tone: Professional, Action-First.
-        Stats: {self.hardware_monitor()}
+        Current Context: {past_knowledge}
+        Hardware Stats: {self.hardware_monitor()}
         """
 
-        # अगर कुछ 'इन्वेंट' या 'स्कैन' करने को कहा जाए
-        if any(word in query for word in ["इन्वेंट", "सीखो", "स्कैन", "नक्शा", "ट्रैक"]):
-            logic = self.acquire_new_skill(query)
-            self.speak("सर, लॉजिक सिंक्रोनाइज़ हो गया है। मैं परिणाम जनरेट कर रही हूँ।")
-            # यहाँ सायरा उस लॉजिक को 'Invention' की तरह पेश करेगी
-            query = f"{query}. Use this logic: {logic}"
+        # ऑटोनामस एजेंट मोड
+        if any(word in query for word in ["इन्वेंट", "सीखो", "अपग्रेड", "सबटास्क"]):
+            logic = self.self_evolve(query)
+            query = f"{query}. Use this evolved logic: {logic}"
 
         try:
             response = self.client.chat.completions.create(
@@ -97,14 +114,6 @@ class SairaUltimateMachine:
             )
             ans = response.choices[0].message.content
             self.save_eternal_memory(query, ans)
-            self.speak(ans)
-            return ans # डैशबोर्ड/फोन के लिए
+            return ans
         except Exception as e:
-            return f"Neural Fault, Sir: {e}"
-
-# --- APP.PY BRIDGE के लिए ---
-if __name__ == "__main__":
-    API_KEY = ""
-    saira = SairaUltimateMachine(API_KEY)
-
-        
+            return f"Neural Fault: {str(e)}"
