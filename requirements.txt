@@ -1,0 +1,11 @@
+flask
+groq
+requests
+gtts
+pygame
+psutil
+opencv-python-headless
+matplotlib
+numpy
+SpeechRecognition
+gunicorn

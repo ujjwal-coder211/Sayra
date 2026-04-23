@@ -1,0 +1,16 @@
+{
+  "name": "Saira Sovereign AGI",
+  "short_name": "Saira",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00ffcc",
+  "description": "Saira Ultimate Machine - Sovereign OS",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2103/2103633.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

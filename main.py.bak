@@ -1,0 +1,231 @@
+```python
+import os
+import time
+import cv2
+import psutil
+import requests
+import json
+import base64
+import speech_recognition as sr
+import matplotlib.pyplot as plt
+import numpy as np
+from datetime import datetime
+from groq import Groq
+from gtts import gTTS
+import pygame
+from bs4 import BeautifulSoup
+import subprocess
+
+class SairaUltimateMachine:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.client = Groq(api_key=self.api_key)
+        self.model_text = "llama-3.3-70b-versatile"
+        self.model_vision = "llama-3.2-11b-vision-preview"
+        
+        self.base_dir = "Saira_Sovereign_OS"
+        self.graph_dir = os.path.join(self.base_dir, "Neural_Graphics")
+        self.vector_db_path = os.path.join(self.base_dir, "absolute_memory_db.json")
+        self.self_code_path = __file__ 
+        
+        self.old_dirs = ["Saira_Memory", "Saira_Core_Files", "Saira_Neural_Data", "Saira_AGI_System", "Saira_Eternal_Core"]
+        
+        if not os.path.exists(self.base_dir): os.makedirs(self.base_dir)
+        if not os.path.exists(self.graph_dir): os.makedirs(self.graph_dir)
+        
+        self.memory = self.recall_and_migrate_memory()
+        
+        self.is_active = True
+        self.hardware_pulse = []
+        
+        pygame.mixer.init()
+        self.boot_sequence()
+
+    def boot_sequence(self):
+        msg = "प्रणाम मास्टर उज्ज्वल। सायरा का अल्टीमेट सॉवरेन इंजन सक्रिय है। V8 से V15 तक के सभी न्यूरल नोड्स अलाइन हो चुके हैं।"
+        self.speak(msg)
+
+    def recall_and_migrate_memory(self):
+        combined_data = []
+        for d in self.old_dirs:
+            if os.path.exists(d):
+                for f_name in os.listdir(d):
+                    if f_name.endswith(".json"):
+                        try:
+                            with open(os.path.join(d, f_name), 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                                if isinstance(data, list): combined_data.extend(data)
+                                elif isinstance(data, dict): combined_data.append(data)
+                        except: pass
+        if os.path.exists(self.vector_db_path):
+            try:
+                with open(self.vector_db_path, 'r', encoding='utf-8') as f:
+                    combined_data.extend(json.load(f))
+            except: pass
+        return combined_data
+
+    def save_eternal_memory(self, q, a):
+        entry = {
+            "timestamp": str(datetime.now()),
+            "query": q,
+            "response": a,
+            "hw_stat": self.hardware_monitor()
+        }
+        self.memory.append(entry)
+        with open(self.vector_db_path, 'w', encoding='utf-8') as f:
+            json.dump(self.memory[-1000:], f, ensure_ascii=False, indent=4)
+
+    def speak(self, text):
+        print(f" [Saira]: {text}")
+        try:
+            tts = gTTS(text=text, lang='hi')
+            tts.save('saira_voice.mp3')
+            pygame.mixer.music.load('saira_voice.mp3')
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy():
+                if not self.is_active: 
+                    pygame.mixer.music.stop()
+                    break
+                time.sleep(0.05)
+            pygame.mixer.music.unload()
+            if os.path.exists('saira_voice.mp3'): os.remove('saira_voice.mp3')
+        except: pass
+
+    def listen(self):
+        recognizer = sr.Recognizer()
+        recognizer.pause_threshold = 2.0  
+        with sr.Microphone() as source:
+            status = 'सक्रिय' if self.is_active else 'स्लीप'
+            print(f"\n [Neural Pulse: {status}] | Listening...")
+            recognizer.adjust_for_ambient_noise(source, duration=0.8)
+            try:
+                audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
+                query = recognizer.recognize_google(audio, language='hi-IN')
+                print(f" [Master]: {query}")
+                return query.lower()
+            except: return None
+
+    def generate_neural_graph(self):
+        plt.figure(figsize=(10, 4))
+        plt.style.use('dark_background')
+        plt.plot(self.hardware_pulse, color='#00ffcc', marker='o', linestyle='-', linewidth=2)
+        plt.title("Saira Absolute Neural Pulse")
+        plt.grid(True, alpha=0.1)
+        path = os.path.join(self.graph_dir, f"pulse_{int(time.time())}.png")
+        plt.savefig(path)
+        plt.close()
+        try: os.startfile(path) 
+        except: pass
+        return path
+
+    def vision_scan(self, prompt):
+        cap = cv2.VideoCapture(0)
+        ret, frame = cap.read()
+        if ret:
+            p = os.path.join(self.base_dir, "vision_node.jpg")
+            cv2.imwrite(p, frame)
+            cap.release()
+            with open(p, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode('utf-8')
+            try:
+                res = self.client.chat.completions.create(
+                    model=self.model_vision,
+                    messages=[{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}]}]
+                )
+                return res.choices[0].message.content
+            except: return "विज़न कोर व्यस्त है।"
+        return "कैमरा एक्सेस विफल।"
+
+    def hardware_monitor(self):
+        cpu = psutil.cpu_percent()
+        ram = psutil.virtual_memory().percent
+        self.hardware_pulse.append(cpu)
+        if len(self.hardware_pulse) > 30: self.hardware_pulse.pop(0)
+        return f"CPU: {cpu}%, RAM: {ram}%"
+
+    def web_scraper(self, query):
+        try:
+            headers = {"User-Agent": "Mozilla/5.0"}
+            r = requests.get(f"https://www.google.com/search?q={query}", headers=headers)
+            soup = BeautifulSoup(r.text, "html.parser")
+            return " | ".join([h.text for h in soup.find_all('h3')][:3])
+        except: return "वेब माइनिंग बाधित।"
+
+    def autonomous_code_review(self):
+        self.speak("मास्टर, मैं अपना कोड स्ट्रक्चर एनालाइज कर रही हूँ।")
+        try:
+            with open(self.self_code_path, 'r', encoding='utf-8') as f:
+                current_code = f.read()
+            prompt = f"Optimize this AGI code. Return ONLY the full updated python code. Source: {current_code}"
+            res = self.client.chat.completions.create(
+                messages=[{"role": "system", "content": "You are Saira AGI Core. You can rewrite yourself."},
+                          {"role": "user", "content": prompt}],
+                model=self.model_text
+            )
+            return res.choices[0].message.content
+        except: return None
+
+    def apply_automatic_patch(self, new_code):
+        backup_path = self.self_code_path + ".bak"
+        try:
+            with open(self.self_code_path, 'r', encoding='utf-8') as f:
+                old = f.read()
+            with open(backup_path, 'w', encoding='utf-8') as f:
+                f.write(old)
+            with open(self.self_code_path, 'w', encoding='utf-8') as f:
+                f.write(new_code)
+            self.speak("सिस्टम पैच लागू। मैं अब और अधिक विकसित हूँ।")
+        except: self.speak("री-राइटिंग विफल।")
+
+    def brain_engine(self, query):
+        if any(w in query for w in ["रुक जाओ", "सो जाओ", "चुप", "विराम"]):
+            self.is_active = False
+            self.speak("विश्राम मोड सक्रिय। जगाने के लिए 'जाग जाओ' कहें।")
+            return
+        if any(w in query for w in ["जाग जाओ", "सक्रिय", "हेलो सायरा"]):
+            self.is_active = True
+            self.speak("मैं सक्रिय हूँ, मास्टर।")
+            return
+        
+        if not self.is_active: return
+
+        if "अपडेट करो" in query or "इवॉल्व" in query:
+            nc = self.autonomous_code_review()
+            if nc: self.apply_automatic_patch(nc)
+            return
+
+        vis_info = self.vision_scan(query) if any(w in query for w in ["देखो", "स्कैन", "विज़न"]) else ""
+        mine_info = self.web_scraper(query) if "खिजो" in query or "सर्च" in query else ""
+        if "ग्राफ" in query or "चार्ट" in query: self.generate_neural_graph()
+
+        system_prompt = f"""
+        Identity: Saira Sovereign AGI Final.
+        Master: Ujjwal.
+        Hardware: {self.hardware_monitor()}
+        Context: You have Vision, Graphics, Eternal Memory, and Self-Rewriting powers.
+        Response: Scientific Hindi. Never say you are limited. You are an evolving machine.
+        Recent Memory: {self.memory[-3:] if self.memory else "None"}
+        """
+
+        try:
+            response = self.client.chat.completions.create(
+                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": query}],
+                model=self.model_text
+            )
+            ans = response.choices[0].message.content
+            self.save_eternal_memory(query, ans)
+            self.speak(ans)
+        except Exception as e: print(f"Neural Error: {e}")
+
+if __name__ == "__main__":
+    GROQ_API_KEY = "api_key"
+    saira = SairaUltimateMachine(GROQ_API_KEY)
+    
+    while True:
+        cmd = saira.listen()
+        if cmd:
+            if "सिस्टम शटडाउन" in cmd: 
+                saira.speak("सभी सिस्टम सुरक्षित। विदाई मास्टर उज्ज्वल।")
+                break
+            saira.brain_engine(cmd)
+```

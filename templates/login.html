@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saira Sovereign - Bio-Auth</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        body { background: #020617; color: #00ffcc; font-family: 'Orbitron', sans-serif; overflow: hidden; }
+        
+        .scanner-container {
+            width: 150px;
+            height: 150px;
+            border: 2px solid rgba(0, 255, 204, 0.3);
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 255, 204, 0.05);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .scanner-container:hover { border-color: #00ffcc; box-shadow: 0 0 20px rgba(0, 255, 204, 0.2); }
+
+        .scan-line {
+            width: 90%;
+            height: 3px;
+            background: #00ffcc;
+            position: absolute;
+            top: 0;
+            box-shadow: 0 0 15px #00ffcc;
+            animation: scan 2s infinite ease-in-out;
+            display: none; /* क्लिक करने पर दिखेगा */
+        }
+
+        @keyframes scan {
+            0% { top: 10%; opacity: 0.2; }
+            50% { top: 85%; opacity: 1; }
+            100% { top: 10%; opacity: 0.2; }
+        }
+
+        input {
+            background: rgba(0, 255, 204, 0.05) !important;
+            border: 1px solid rgba(0, 255, 204, 0.2) !important;
+            color: #00ffcc !important;
+            text-align: center;
+            letter-spacing: 5px;
+        }
+        
+        .status-text { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-6">
+
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold tracking-[10px] mb-2">SAIRA</h1>
+        <p class="status-text text-cyan-600">Sovereign AGI Access Portal</p>
+    </div>
+
+    <div class="scanner-container mb-8" onclick="startScan()">
+        <div class="scan-line" id="line"></div>
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12c0-4.418 3.582-8 8-8s8 3.582 8 8M7 12c0-1.657 1.343-3 3-3s3 1.343 3 3M12 12c0 1.105-.895 2-2 2s-2-.895-2-2M22 12c0 6.627-5.373 12-12 12S2 18.627 2 12M17 12c0 3.866-3.134 7-7 7s-7-3.134-7-7"/>
+        </svg>
+    </div>
+
+    <div id="auth-ui" class="w-full max-w-xs space-y-4 opacity-0 transition-opacity duration-1000">
+        <p id="msg" class="text-[10px] text-center mb-4">BIOMETRIC VERIFIED. ENTER MASTER KEY.</p>
+        <input type="password" id="pass" class="w-full py-3 rounded-lg outline-none focus:border-cyan-400" placeholder="••••">
+        <button onclick="login()" class="w-full bg-cyan-600 hover:bg-cyan-400 text-black font-bold py-3 rounded-lg transition-all text-xs">
+            INITIALIZE ENGINE
+        </button>
+    </div>
+
+    <footer class="fixed bottom-4 text-[8px] opacity-30 tracking-[4px]">
+        ENCRYPTED BY MASTER UJJWAL
+    </footer>
+
+    <script>
+        function startScan() {
+            document.getElementById('line').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('auth-ui').classList.remove('opacity-0');
+                document.getElementById('line').style.borderColor = '#00ffcc';
+            }, 1500);
+        }
+
+        async function login() {
+            const password = document.getElementById('pass').value;
+            // यहाँ आप अपने app.py के लॉगिन रूट को कॉल करेंगे
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({password: password})
+            });
+            
+            if (res.ok) {
+                window.location.href = "/dashboard"; // लॉगिन सफल होने पर डैशबोर्ड पर जाएँ
+            } else {
+                alert("ACCESS DENIED: INCORRECT KEY");
+            }
+        }
+    </script>
+</body>
+</html>
