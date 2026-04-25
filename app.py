@@ -1,11 +1,11 @@
 import os
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
+import requests # लोकेशन डेटा फेच करने के लिए
 
 app = Flask(__name__)
 
 # --- API KEY & BRIDGE SETUP ---
-# अपनी असली API Key यहाँ डालें या Environment Variable का उपयोग करें
 API_KEY = os.environ.get("GROQ_API_KEY", "gsk_your_default_here")
 
 # ग्लोबल वेरिएबल्स
@@ -17,7 +17,7 @@ def initialize_saira():
     global saira_core, BRIDGE_ACTIVE, error_msg
     try:
         from main import SairaUltimateMachine
-        # सयारा कोर को इनिशियलाइज़ करना
+        # सायरा कोर को इनिशियलाइज़ करना
         saira_core = SairaUltimateMachine(API_KEY)
         BRIDGE_ACTIVE = True
         print("✅ Saira Neural Bridge: ACTIVE")
@@ -58,14 +58,21 @@ def chat():
 
     if BRIDGE_ACTIVE and saira_core:
         try:
+            # --- [NEW] DEVICE CONTEXT LOGIC ---
+            # यूजर की आईपी एड्रेस पकड़ना (फोन या लैपटॉप)
+            user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+            
             # सायरा के ब्रेन इंजन से जवाब लें
+            # नोट: main.py का brain_engine अब डिवाइस की लोकेशन खुद मैनेज करेगा
             response = saira_core.brain_engine(query)
-            # साथ ही सिस्टम स्टैट्स भी भेजें ताकि डैशबोर्ड अपडेट हो सके
+            
+            # सिस्टम स्टैट्स भी भेजें ताकि डैशबोर्ड अपडेट हो सके
             stats = saira_core.get_system_stats()
             
             return jsonify({
                 "reply": response or "निर्देश प्रोसेस कर लिया गया है।",
-                "stats": stats # यह HTML में प्रोग्रेस बार अपडेट करेगा
+                "stats": stats,
+                "master_ip": user_ip # ट्रैकिंग के लिए
             })
         except Exception as e:
             return jsonify({"reply": f"Neural Bridge Error: {str(e)}"})
@@ -76,15 +83,20 @@ def chat():
 def status():
     # डैशबोर्ड के लिए असली सिस्टम हेल्थ डेटा
     current_stats = {}
+    location_info = "Syncing..."
+    
     if saira_core:
         current_stats = saira_core.get_system_stats()
+        # [NEW] लाइव लोकेशन को स्टेटस में भी दिखाना
+        location_info = saira_core.get_device_context()
 
     return jsonify({
         "system": "Saira V17.5 Sovereign",
         "bridge": "Active" if BRIDGE_ACTIVE else "Offline",
         "error_details": error_msg,
         "server_time": str(datetime.now()),
-        "live_stats": current_stats # CPU, RAM, Temp का असली डेटा
+        "master_location": location_info, # मास्टर अभी कहाँ हैं
+        "live_stats": current_stats 
     })
 
 if __name__ == "__main__":
