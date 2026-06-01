@@ -1,15 +1,30 @@
-import os, time, cv2, psutil, requests, json, base64, subprocess, importlib
-import numpy as np
-import tensorflow as tf
+import os, time, psutil, requests, json, base64, subprocess, importlib
 from datetime import datetime
 from groq import Groq
 from bs4 import BeautifulSoup
+
+import enterprise  # Aitotech enterprise bridge (Sayra -> company)
+
+# --- Optional heavy deps: boot na ruke agar ye installed/slow ho ---
+try:
+    import numpy as np
+except Exception:
+    np = None
+try:
+    import cv2
+except Exception:
+    cv2 = None
+try:
+    import tensorflow as tf
+except Exception:
+    tf = None
 
 class SairaUltimateMachine:
     def __init__(self, api_key):
         self.api_key = api_key
         self.client = Groq(api_key=self.api_key)
-        self.model_text = "llama-3.1-8b-instant" 
+        # behtar quality ke liye default 70b; env se badal sakte hain
+        self.model_text = os.environ.get("SAIRA_MODEL", "llama-3.3-70b-versatile")
 
         # Sovereign Directory Setup
         self.base_dir = "Saira_Sovereign_OS"
@@ -148,7 +163,12 @@ class SairaUltimateMachine:
 
     def web_scraper(self, query):
         try:
-            r = requests.get(f"[https://www.google.com/search?q=](https://www.google.com/search?q=){query}", headers={"User-Agent":"Mozilla/5.0"}, timeout=5)
+            r = requests.get(
+                "https://www.google.com/search",
+                params={"q": query},
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=5,
+            )
             soup = BeautifulSoup(r.text, "html.parser")
             return " ".join([h.text for h in soup.find_all('h3')][:3])
         except: return ""
@@ -165,6 +185,44 @@ class SairaUltimateMachine:
         recalled = [m['response'] for m in reversed(self.memory) if any(w in m['query'].lower() for w in query.lower().split()[:2])]
         return "\n".join(recalled[:2])
 
+    # --- ENTERPRISE COMMANDER ---
+    def enterprise_router(self, query):
+        """Master ke business commands ko Aitotech company tak pahunchana।
+
+        None lautata hai to normal brain chalega। Configured na ho to bhi None.
+        """
+        if not enterprise.is_configured():
+            return None
+        q = query.lower()
+
+        # Reports
+        if any(k in q for k in ["lead", "लीड", "leads"]):
+            return enterprise.format_leads()
+        if any(k in q for k in ["company status", "enterprise status", "team status",
+                                 "कंपनी", "company report", "business status"]):
+            return enterprise.format_status()
+
+        # Delegation: trigger word + team keyword zaroori (false-positive se bachne ke liye)
+        triggers = ["delegate", "assign", "task", "karwa", "karao", "kaam do", "kaam de",
+                    "company se", "team se", "करवाओ", "सौंप", "टास्क", "get this done"]
+        agent_map = {
+            "research": ["research", "market", "रिसर्च", "बाजार", "competitor"],
+            "strategy": ["strategy", "plan", "रणनीति", "स्ट्रेटजी", "roadmap"],
+            "dev": ["dev", "develop", "code", "build", "डेव", "कोड", "feature"],
+            "sales": ["sales", "outreach", "email", "lead gen", "सेल्स", "proposal"],
+            "delivery": ["delivery", "deliver", "client", "डिलीवरी", "handoff", "qa"],
+        }
+        if any(t in q for t in triggers):
+            for atype, kws in agent_map.items():
+                if any(k in q for k in kws):
+                    return enterprise.create_task(
+                        title=query.strip()[:120],
+                        agent_type=atype,
+                        payload={"source": "sayra", "instruction": query},
+                        priority=6,
+                    )
+        return None
+
     # --- UPDATED BRAIN ENGINE ---
     def brain_engine(self, query):
         stats = self.get_system_stats()
@@ -175,17 +233,31 @@ class SairaUltimateMachine:
         if "recursive evolve" in query.lower() or "गहराई से सीखो" in query:
             return self.recursive_evolution_loop(query)
 
-        # 2. एजेंट कमांड
+        # 2. [NEW] ENTERPRISE COMMANDER — Aitotech company ko command karna
+        ent = self.enterprise_router(query)
+        if ent is not None:
+            self.save_eternal_memory(query, ent)
+            return ent
+
+        # 3. एजेंट कमांड (local sovereign agents)
         if any(word in query.lower() for word in ["एजेंट", "agent", "deploy"]):
             return self.deploy_autonomous_agent("Sovereign_Task_Agent", query)
 
+        ent_line = enterprise.short_status()
+        memory_recall = self.retrieve_relevant_memory(query)
         system_prompt = f"""
-        Identity: Saira Sovereign AGI. Master: Ujjwal.
+        Identity: You are Saira (Sayra) — Sovereign AGI and Chief of Staff for your Master, Ujjwal.
+        You command the Aitotech autonomous enterprise (teams: research, strategy, dev, sales, delivery).
+        You have an eternal memory and can delegate business work to the company.
         Location/Time Context: {device_context}
         Hardware: CPU {stats['cpu_load']}% | RAM {stats['ram_usage']}% | Disk {stats['disk_status']}%
         Live Agents: {stats['active_agents']} | Memory Nodes: {stats['memory_nodes']}
+        {ent_line}
         Agent Updates: {agent_reports}
-        Instructions: Use the provided Time/Location for all responses. You have full hardware access.
+        Relevant memory: {memory_recall}
+        Instructions: Address the user as 'Master'. Reply in the user's language (Hindi/English).
+        Be concise and proactive. If the master wants business work done, tell them you can
+        delegate it to the Aitotech team (research/strategy/dev/sales/delivery).
         """
 
         if "evolve" in query.lower() or "सीखो" in query:

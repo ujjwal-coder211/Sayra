@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.bak
+
+# Env / secrets
+.env
+.env.local
+
+# Sayra runtime-generated (sovereign OS + agents)
+Saira_Sovereign_OS/
+report_*.txt
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
