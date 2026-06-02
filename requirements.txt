@@ -1,13 +1,6 @@
 flask
 groq
 requests
-gtts
 psutil
-opencv-python-headless
-matplotlib
-numpy
-SpeechRecognition
-gunicorn
 beautifulsoup4
-tensorflow
-scikit-learn
+gunicorn
