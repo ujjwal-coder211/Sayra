@@ -9,8 +9,6 @@ services:
       # Render PORT khud set karta hai; Dockerfile usse $PORT se uthata hai.
       - key: GROQ_API_KEY
         sync: false          # Render dashboard me daalo (secret)
-      - key: MASTER_PASSWORD
-        sync: false          # ek strong password daalo
       - key: SAIRA_MODEL
         value: llama-3.3-70b-versatile
       # Aitotech enterprise se connect karna ho to (optional):

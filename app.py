@@ -7,8 +7,6 @@ app = Flask(__name__)
 
 # --- API KEY & BRIDGE SETUP ---
 API_KEY = os.environ.get("GROQ_API_KEY", "gsk_your_default_here")
-# Master password ab env se (default fallback dev ke liye)
-MASTER_PASSWORD = os.environ.get("MASTER_PASSWORD", "UJJWAL_SAIRA")
 
 # ग्लोबल वेरिएबल्स
 BRIDGE_ACTIVE = False
@@ -35,16 +33,7 @@ initialize_saira()
 
 @app.route('/')
 def index():
-    return render_template('login.html')
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    password = data.get('password')
-    # मास्टर पासवर्ड चेक (env: MASTER_PASSWORD)
-    if password == MASTER_PASSWORD:
-        return jsonify({"success": True})
-    return jsonify({"success": False, "message": "एक्सेस डिनाइड: मास्टर की गलत है!"})
+    return render_template('dashboard.html')
 
 @app.route('/dashboard')
 def dashboard():

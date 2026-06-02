@@ -3,7 +3,7 @@
 ## Sayra kya hai
 **Sayra = Master Ujjwal ka personal Sovereign AGI / Chief of Staff.**
 Ye ek persistent-memory AI assistant hai (eternal brain), jo:
-- Master se baat karti hai (chat + dashboard, password-protected)
+- Master se baat karti hai (chat + dashboard — direct open, no login)
 - Sab kuch **yaad** rakhti hai (eternal memory)
 - Khud **local agents deploy** kar sakti hai (sovereign OS)
 - Web se info la sakti hai, system monitor karti hai
@@ -49,7 +49,7 @@ Sayra poore Aitotech setup ke **upar** baithti hai — **CEO / Commander layer**
 ## Setup
 1. `.env.example` ko `.env` banao, values bharo (`GROQ_API_KEY`, `ENTERPRISE_API_URL` = Railway URL).
 2. `pip install -r requirements.txt`
-3. `python app.py` → `http://localhost:7860` (login password = `MASTER_PASSWORD`)
+3. `python app.py` → `http://localhost:7860` (dashboard seedha khulega)
 
 `ENTERPRISE_API_URL` set na ho to Sayra akele (bina company ke) bhi normally chalti hai.
 
@@ -57,5 +57,5 @@ Sayra poore Aitotech setup ke **upar** baithti hai — **CEO / Commander layer**
 - 🔗 **Enterprise bridge** (`enterprise.py`) — Sayra ab Aitotech company ko command karti hai.
 - 🧠 **Memory ab use hoti hai** — purani relevant baatein system prompt me jaati hain.
 - ⚡ **Fast boot** — `cv2`/`tensorflow` optional (na ho to crash nahi).
-- 🔐 **Master password env se** (hardcode nahi).
+- 🔓 **Open dashboard** — login hata diya gaya (public URL pe koi bhi access kar sakta hai).
 - 🐛 **web_scraper URL bug fix**; model env-configurable (default behtar 70b).
