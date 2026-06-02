@@ -4,3 +4,4 @@ requests
 psutil
 beautifulsoup4
 gunicorn
+gtts

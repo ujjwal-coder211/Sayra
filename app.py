@@ -1,7 +1,10 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 from datetime import datetime
-import requests # लोकेशन डेटा फेच करने के लिए
+import io
+import requests
+
+import speech_service
 
 app = Flask(__name__)
 
@@ -89,7 +92,39 @@ def status():
         "master_location": location_info,
         "live_stats": current_stats,
         "brain": saira_core.get_brain_status() if saira_core else {},
+        "speech": speech_service.speech_capabilities(),
     })
+
+
+@app.route("/speech/status")
+def speech_status():
+    return jsonify(speech_service.speech_capabilities())
+
+
+@app.route("/speech/transcribe", methods=["POST"])
+def speech_transcribe():
+    if "audio" not in request.files:
+        return jsonify({"error": "No audio file"}), 400
+    lang = request.form.get("language") or "hi"
+    text, err = speech_service.transcribe_file(request.files["audio"], language=lang)
+    if err:
+        return jsonify({"error": err}), 502
+    if not text:
+        return jsonify({"error": "Kuch sunai nahi diya"}), 422
+    return jsonify({"text": text})
+
+
+@app.route("/speech/speak", methods=["POST"])
+def speech_speak():
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    lang = data.get("lang") or "hi"
+    if not text:
+        return jsonify({"error": "Empty text"}), 400
+    mp3, err = speech_service.synthesize_mp3(text, lang=lang)
+    if err or not mp3:
+        return jsonify({"error": err or "TTS failed"}), 502
+    return send_file(io.BytesIO(mp3), mimetype="audio/mpeg", download_name="saira.mp3")
 
 if __name__ == "__main__":
     # पोर्ट मैनेजमेंट (Render या स्थानीय सर्वर के लिए)
