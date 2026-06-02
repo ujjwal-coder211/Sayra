@@ -97,8 +97,9 @@ def status():
         "bridge": "Active" if BRIDGE_ACTIVE else "Offline",
         "error_details": error_msg,
         "server_time": str(datetime.now()),
-        "master_location": location_info, # मास्टर अभी कहाँ हैं
-        "live_stats": current_stats 
+        "master_location": location_info,
+        "live_stats": current_stats,
+        "brain": saira_core.get_brain_status() if saira_core else {},
     })
 
 if __name__ == "__main__":

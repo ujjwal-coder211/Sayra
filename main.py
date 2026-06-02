@@ -1,86 +1,70 @@
-import os, time, psutil, requests, json, base64, subprocess, importlib
+import os, time, psutil, requests, json, subprocess
 from datetime import datetime
-from groq import Groq
 from bs4 import BeautifulSoup
 
-import enterprise  # Aitotech enterprise bridge (Sayra -> company)
+import enterprise
+from sovereign_brain import SovereignBrain
 
-# --- Optional heavy deps: boot na ruke agar ye installed/slow ho ---
-try:
-    import numpy as np
-except Exception:
-    np = None
-try:
-    import cv2
-except Exception:
-    cv2 = None
-try:
-    import tensorflow as tf
-except Exception:
-    tf = None
 
 class SairaUltimateMachine:
     def __init__(self, api_key):
         self.api_key = api_key
-        self.client = Groq(api_key=self.api_key)
-        # behtar quality ke liye default 70b; env se badal sakte hain
-        self.model_text = os.environ.get("SAIRA_MODEL", "llama-3.3-70b-versatile")
-
-        # Sovereign Directory Setup
-        # SAIRA_DATA_DIR -> Railway/Render persistent volume (e.g. /data) set karo
-        # taaki memory restart pe na mite. Default "." (local dev).
         data_root = os.environ.get("SAIRA_DATA_DIR", ".")
+        self.brain = SovereignBrain(data_root, api_key)
+
         self.base_dir = os.path.join(data_root, "Saira_Sovereign_OS")
         self.skills_dir = os.path.join(self.base_dir, "evolved_skills")
-        self.agents_dir = os.path.join(self.base_dir, "agents") 
+        self.agents_dir = os.path.join(self.base_dir, "agents")
         self.vector_db_path = os.path.join(self.base_dir, "eternal_memory.json")
-        
+
         for path in [self.base_dir, self.skills_dir, self.agents_dir]:
-            if not os.path.exists(path): os.makedirs(path)
+            if not os.path.exists(path):
+                os.makedirs(path)
 
         self.memory = self.recall_and_migrate_memory()
         self.running_processes = {}
 
-    # --- 1. [NEW] RECURSIVE EVOLUTION ENGINE ---
+    def _think(self, messages: list[dict[str, str]], user_query: str = "") -> str:
+        """Groq + fallback chain — har jagah yahi use karo."""
+        answer, _source = self.brain.complete(messages, user_query=user_query)
+        return answer
+
+    def get_brain_status(self) -> dict:
+        return self.brain.status()
+
+    # --- RECURSIVE EVOLUTION ENGINE ---
     def recursive_evolution_loop(self, complex_goal):
-        """मास्टर के जटिल लक्ष्यों को छोटे खुदमुख्तार एजेंटों में तोड़ना"""
         print(f"[!] Sovereign Evolution Loop Active: {complex_goal}")
-        
-        planning_prompt = f"Break down this goal into 3 executable sub-tasks for Python agents: {complex_goal}. Return steps as a numbered list."
+        planning_prompt = (
+            f"Break down this goal into 3 executable sub-tasks for Python agents: "
+            f"{complex_goal}. Return steps as a numbered list."
+        )
         try:
-            plan_res = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": planning_prompt}],
-                model=self.model_text
+            raw = self._think(
+                [{"role": "user", "content": planning_prompt}],
+                user_query=complex_goal,
             )
-            steps = plan_res.choices[0].message.content.split('\n')
-            
+            steps = raw.split("\n")
             evolution_report = []
             for step in steps:
                 if step.strip() and any(char.isdigit() for char in step):
-                    # हर कदम के लिए एक स्पेशलिस्ट एजेंट तैनात करना
                     agent_name = f"Evo_Agent_{int(time.time())}"
                     status = self.deploy_autonomous_agent(agent_name, step)
                     evolution_report.append(f"Step Active: {step} -> {status}")
-            
-            return "\n".join(evolution_report)
+            return "\n".join(evolution_report) or raw
         except Exception as e:
             return f"Evolution loop error: {e}"
 
-    # --- 2. [NEW] GLOBAL CONTEXT SYNC (Time & Location) ---
     def get_device_context(self):
-        """मास्टर जिस भी डिवाइस पर हों, वहां का सटीक समय और लोकेशन पता करना"""
         try:
-            # IP के आधार पर डेटा लेना
-            geo = requests.get('https://ipapi.co/json/', timeout=5).json()
-            city = geo.get('city', 'Unknown City')
-            region = geo.get('region', 'India')
-            # डिवाइस का लोकल समय
+            geo = requests.get("https://ipapi.co/json/", timeout=5).json()
+            city = geo.get("city", "Unknown City")
+            region = geo.get("region", "India")
             local_time = datetime.now().strftime("%I:%M:%S %p")
             return f"{city}, {region} | Time: {local_time}"
-        except:
+        except Exception:
             return f"Global Sync Active | Time: {datetime.now().strftime('%H:%M:%S')}"
 
-    # --- MASTER AGENT DEPLOYMENT & BACKGROUND ENGINE ---
     def deploy_autonomous_agent(self, agent_name, task_description):
         print(f"[*] Deploying Sovereign Agent: {agent_name}")
         report_file = f"report_{agent_name.lower()}.txt"
@@ -94,75 +78,85 @@ class SairaUltimateMachine:
         Requirement: Include 'import os, time' and error handling.
         """
         try:
-            response = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": agent_prompt}],
-                model=self.model_text
+            agent_code = self._think(
+                [{"role": "user", "content": agent_prompt}],
+                user_query=task_description,
             )
-            agent_code = response.choices[0].message.content
-            
-            # क्लीनिंग कोड (Markdown हटाना)
             if "```python" in agent_code:
                 agent_code = agent_code.split("```python")[1].split("```")[0]
 
             filename = f"{agent_name.lower()}_agent.py"
             filepath = os.path.join(self.agents_dir, filename)
-            
             header = f"# AGENT: {agent_name}\n# CREATED BY SAIRA FOR MASTER UJJWAL\n\n"
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write(header + agent_code)
-            
-            process = subprocess.Popen(['python', filepath], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            process = subprocess.Popen(
+                ["python", filepath],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             self.running_processes[agent_name] = process.pid
-            
             return f"✅ मिशन तैनात: '{agent_name}' बैकग्राउंड में एक्टिव है।"
         except Exception as e:
             return f"❌ डिप्लॉयमेंट विफल: {str(e)}"
 
     def read_agent_reports(self):
         reports = {}
-        if not os.path.exists(self.agents_dir): return reports
+        if not os.path.exists(self.agents_dir):
+            return reports
         for file in os.listdir(self.agents_dir):
             if file.startswith("report_") and file.endswith(".txt"):
                 try:
-                    with open(os.path.join(self.agents_dir, file), 'r', encoding='utf-8') as f:
-                        reports[file] = f.readlines()[-3:] 
-                except: pass
+                    with open(os.path.join(self.agents_dir, file), "r", encoding="utf-8") as f:
+                        reports[file] = f.readlines()[-3:]
+                except Exception:
+                    pass
         return reports
 
-    # --- CORE FUNCTIONS ---
     def save_eternal_memory(self, q, a):
         try:
             entry = {"timestamp": str(datetime.now()), "query": q, "response": a}
             self.memory.append(entry)
-            with open(self.vector_db_path, 'w', encoding='utf-8') as f:
+            with open(self.vector_db_path, "w", encoding="utf-8") as f:
                 json.dump(self.memory, f, ensure_ascii=False, indent=4)
-        except: pass
+        except Exception:
+            pass
 
     def self_evolve(self, goal):
         context = self.web_scraper(f"advanced python for {goal}")
-        prompt = f"Create a recursive Python solution for '{goal}'. Context: {context}. Return ONLY code."
+        prompt = (
+            f"Create a recursive Python solution for '{goal}'. "
+            f"Context: {context}. Return ONLY code."
+        )
         try:
-            res = self.client.chat.completions.create(messages=[{"role":"user","content":prompt}], model=self.model_text)
-            new_code = res.choices[0].message.content
+            new_code = self._think([{"role": "user", "content": prompt}], user_query=goal)
             status = self.integrate_new_skill(goal, new_code)
             return f"{status}\n\n{new_code}"
-        except: return "Evolution link failed."
+        except Exception:
+            return "Evolution link failed."
 
     def integrate_new_skill(self, skill_name, code):
         filepath = os.path.join(self.skills_dir, f"skill_{skill_name.lower()}.py")
         try:
-            with open(filepath, 'w', encoding='utf-8') as f: f.write(code)
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(code)
             return f"✅ स्किल '{skill_name}' हार्ड-कोड हो गया।"
-        except: return "Skill Save Error."
+        except Exception:
+            return "Skill Save Error."
 
     def get_system_stats(self):
-        return {
+        stats = {
             "cpu_load": psutil.cpu_percent(),
             "ram_usage": psutil.virtual_memory().percent,
-            "disk_status": psutil.disk_usage('/').percent,
+            "disk_status": psutil.disk_usage("/").percent,
             "active_agents": len(self.running_processes),
-            "memory_nodes": len(self.memory)
+            "memory_nodes": len(self.memory),
         }
+        brain = self.get_brain_status()
+        stats["brain_source"] = brain.get("last_source", "none")
+        stats["brain_cache"] = brain.get("cache_entries", 0)
+        return stats
 
     def web_scraper(self, query):
         try:
@@ -173,41 +167,64 @@ class SairaUltimateMachine:
                 timeout=5,
             )
             soup = BeautifulSoup(r.text, "html.parser")
-            return " ".join([h.text for h in soup.find_all('h3')][:3])
-        except: return ""
+            return " ".join([h.text for h in soup.find_all("h3")][:3])
+        except Exception:
+            return ""
 
     def recall_and_migrate_memory(self):
         if os.path.exists(self.vector_db_path):
             try:
-                with open(self.vector_db_path, 'r', encoding='utf-8') as f: return json.load(f)
-            except: return []
+                with open(self.vector_db_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return []
         return []
 
     def retrieve_relevant_memory(self, query):
-        if not self.memory: return ""
-        recalled = [m['response'] for m in reversed(self.memory) if any(w in m['query'].lower() for w in query.lower().split()[:2])]
+        if not self.memory:
+            return ""
+        recalled = [
+            m["response"]
+            for m in reversed(self.memory)
+            if any(w in m["query"].lower() for w in query.lower().split()[:2])
+        ]
         return "\n".join(recalled[:2])
 
-    # --- ENTERPRISE COMMANDER ---
     def enterprise_router(self, query):
-        """Master ke business commands ko Aitotech company tak pahunchana।
-
-        None lautata hai to normal brain chalega। Configured na ho to bhi None.
-        """
         if not enterprise.is_configured():
             return None
         q = query.lower()
 
-        # Reports
         if any(k in q for k in ["lead", "लीड", "leads"]):
             return enterprise.format_leads()
-        if any(k in q for k in ["company status", "enterprise status", "team status",
-                                 "कंपनी", "company report", "business status"]):
+        if any(
+            k in q
+            for k in [
+                "company status",
+                "enterprise status",
+                "team status",
+                "कंपनी",
+                "company report",
+                "business status",
+            ]
+        ):
             return enterprise.format_status()
 
-        # Delegation: trigger word + team keyword zaroori (false-positive se bachne ke liye)
-        triggers = ["delegate", "assign", "task", "karwa", "karao", "kaam do", "kaam de",
-                    "company se", "team se", "करवाओ", "सौंप", "टास्क", "get this done"]
+        triggers = [
+            "delegate",
+            "assign",
+            "task",
+            "karwa",
+            "karao",
+            "kaam do",
+            "kaam de",
+            "company se",
+            "team se",
+            "करवाओ",
+            "सौंप",
+            "टास्क",
+            "get this done",
+        ]
         agent_map = {
             "research": ["research", "market", "रिसर्च", "बाजार", "competitor"],
             "strategy": ["strategy", "plan", "रणनीति", "स्ट्रेटजी", "roadmap"],
@@ -226,23 +243,19 @@ class SairaUltimateMachine:
                     )
         return None
 
-    # --- UPDATED BRAIN ENGINE ---
     def brain_engine(self, query):
         stats = self.get_system_stats()
-        device_context = self.get_device_context() # यहाँ से लोकेशन और टाइम आएगा
+        device_context = self.get_device_context()
         agent_reports = self.read_agent_reports()
 
-        # 1. इवोल्यूशन लूप ट्रिगर
         if "recursive evolve" in query.lower() or "गहराई से सीखो" in query:
             return self.recursive_evolution_loop(query)
 
-        # 2. [NEW] ENTERPRISE COMMANDER — Aitotech company ko command karna
         ent = self.enterprise_router(query)
         if ent is not None:
             self.save_eternal_memory(query, ent)
             return ent
 
-        # 3. एजेंट कमांड (local sovereign agents)
         if any(word in query.lower() for word in ["एजेंट", "agent", "deploy"]):
             return self.deploy_autonomous_agent("Sovereign_Task_Agent", query)
 
@@ -266,13 +279,12 @@ class SairaUltimateMachine:
         if "evolve" in query.lower() or "सीखो" in query:
             return self.self_evolve(query)
 
-        try:
-            response = self.client.chat.completions.create(
-                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": query}],
-                model=self.model_text
-            )
-            ans = response.choices[0].message.content
-            self.save_eternal_memory(query, ans)
-            return ans
-        except Exception as e:
-            return f"Neural interface fault: {e}"
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query},
+        ]
+        ans, source = self.brain.complete(messages, user_query=query)
+        self.save_eternal_memory(query, ans)
+        if source != "groq":
+            ans = f"{ans}\n\n_[Brain: {source}]_"
+        return ans
