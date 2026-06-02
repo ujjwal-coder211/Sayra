@@ -56,8 +56,11 @@ class SovereignBrain:
         self.fallback_model = os.environ.get(
             "SAIRA_FALLBACK_MODEL", "llama-3.1-8b-instant"
         )
+        # Ollama sirf tab jab explicitly enable ho — GPU-less PC pe system atak jata hai
+        ollama_flag = (os.environ.get("SAIRA_OLLAMA_ENABLED") or "").lower()
+        self.ollama_enabled = ollama_flag in ("1", "true", "yes", "on")
         self.ollama_url = (os.environ.get("SAIRA_OLLAMA_URL") or "").rstrip("/")
-        self.ollama_model = os.environ.get("SAIRA_OLLAMA_MODEL", "llama3.2")
+        self.ollama_model = os.environ.get("SAIRA_OLLAMA_MODEL", "qwen2.5:0.5b")
 
         self.groq_client = None
         if groq_api_key and Groq is not None:
@@ -124,7 +127,8 @@ class SovereignBrain:
             "groq": bool(self.groq_client),
             "primary_model": self.primary_model,
             "fallback_model": self.fallback_model,
-            "ollama": bool(self.ollama_url),
+            "ollama": bool(self.ollama_url and self.ollama_enabled),
+            "ollama_enabled": self.ollama_enabled,
             "ollama_model": self.ollama_model if self.ollama_url else None,
             "enterprise": enterprise.is_configured(),
             "cache_entries": len(self.cache),
@@ -160,13 +164,23 @@ class SovereignBrain:
         return None
 
     def _try_ollama(self, messages: list[dict[str, str]]) -> str | None:
-        if not self.ollama_url:
+        if not self.ollama_url or not self.ollama_enabled:
             return None
         try:
+            # CPU-only PC: chhota context + kam tokens taaki system na atke
             res = requests.post(
                 f"{self.ollama_url}/api/chat",
-                json={"model": self.ollama_model, "messages": messages, "stream": False},
-                timeout=90,
+                json={
+                    "model": self.ollama_model,
+                    "messages": messages,
+                    "stream": False,
+                    "options": {
+                        "num_ctx": 2048,
+                        "num_predict": 256,
+                        "num_thread": int(os.environ.get("SAIRA_OLLAMA_THREADS", "2")),
+                    },
+                },
+                timeout=int(os.environ.get("SAIRA_OLLAMA_TIMEOUT", "45")),
             )
             res.raise_for_status()
             text = (res.json().get("message") or {}).get("content", "").strip()
