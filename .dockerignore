@@ -1,0 +1,16 @@
+.git
+.gitignore
+.vscode
+__pycache__
+*.pyc
+*.bak
+main.py.bak
+.env
+.env.local
+.env.example
+
+# runtime-generated memory/agents (volume pe persist hoga, image me nahi)
+Saira_Sovereign_OS
+Saira_Memory
+report_*.txt
+*.md

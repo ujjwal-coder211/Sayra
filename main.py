@@ -27,7 +27,10 @@ class SairaUltimateMachine:
         self.model_text = os.environ.get("SAIRA_MODEL", "llama-3.3-70b-versatile")
 
         # Sovereign Directory Setup
-        self.base_dir = "Saira_Sovereign_OS"
+        # SAIRA_DATA_DIR -> Railway/Render persistent volume (e.g. /data) set karo
+        # taaki memory restart pe na mite. Default "." (local dev).
+        data_root = os.environ.get("SAIRA_DATA_DIR", ".")
+        self.base_dir = os.path.join(data_root, "Saira_Sovereign_OS")
         self.skills_dir = os.path.join(self.base_dir, "evolved_skills")
         self.agents_dir = os.path.join(self.base_dir, "agents") 
         self.vector_db_path = os.path.join(self.base_dir, "eternal_memory.json")
