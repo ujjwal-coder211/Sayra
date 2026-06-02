@@ -155,6 +155,32 @@
 
         document.getElementById('mic-trigger').addEventListener('click', () => speech.toggleListen());
 
+        async function refreshGroqStatus() {
+            try {
+                const res = await fetch('/status');
+                const data = await res.json();
+                const g = data.groq || {};
+                const bridge = document.getElementById('bridge-stat');
+                if (g.connected) {
+                    bridge.innerText = 'GROQ OK';
+                    bridge.style.color = '#22d3ee';
+                } else if (g.configured) {
+                    bridge.innerText = 'GROQ ERR';
+                    bridge.style.color = '#ef4444';
+                    if (g.error) {
+                        document.getElementById('speech-hint').textContent = g.error.slice(0, 120);
+                    }
+                } else {
+                    bridge.innerText = 'NO KEY';
+                    bridge.style.color = '#ef4444';
+                    document.getElementById('speech-hint').textContent =
+                        'Railway Variables me GROQ_API_KEY=gsk_... set karo, phir Redeploy.';
+                }
+            } catch (_) {}
+        }
+        refreshGroqStatus();
+        setInterval(refreshGroqStatus, 60000);
+
         async function executeCommand() {
             const input = document.getElementById('query-input');
             const chat = document.getElementById('chat-hub');

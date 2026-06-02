@@ -19,14 +19,14 @@ except ImportError:
     gTTS = None  # type: ignore[misc, assignment]
 
 
+import groq_config
+
+
 WHISPER_MODEL = os.environ.get("SAIRA_WHISPER_MODEL", "whisper-large-v3-turbo")
 
 
 def _groq_client() -> Groq | None:
-    key = os.environ.get("GROQ_API_KEY", "")
-    if not key or Groq is None:
-        return None
-    return Groq(api_key=key)
+    return groq_config.groq_client()
 
 
 def transcribe_file(file_storage, language: str | None = None) -> tuple[str | None, str | None]:

@@ -29,6 +29,7 @@ except ImportError:
     Groq = None  # type: ignore[misc, assignment]
 
 import enterprise
+from groq_config import get_groq_api_key, groq_client
 
 
 def _words(text: str) -> set[str]:
@@ -62,9 +63,10 @@ class SovereignBrain:
         self.ollama_url = (os.environ.get("SAIRA_OLLAMA_URL") or "").rstrip("/")
         self.ollama_model = os.environ.get("SAIRA_OLLAMA_MODEL", "qwen2.5:0.5b")
 
-        self.groq_client = None
-        if groq_api_key and Groq is not None:
-            self.groq_client = Groq(api_key=groq_api_key)
+        self.groq_client = groq_client()
+        if groq_api_key and not self.groq_client:
+            # Legacy: key passed from app but invalid — don't create bad client
+            pass
 
         self.cache: list[dict[str, Any]] = self._load_cache()
         self.last_source = "none"
@@ -124,7 +126,8 @@ class SovereignBrain:
 
     def status(self) -> dict[str, Any]:
         return {
-            "groq": bool(self.groq_client),
+            "groq": self.groq_client is not None,
+            "groq_configured": get_groq_api_key() is not None,
             "primary_model": self.primary_model,
             "fallback_model": self.fallback_model,
             "ollama": bool(self.ollama_url and self.ollama_enabled),

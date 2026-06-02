@@ -5,11 +5,12 @@ import io
 import requests
 
 import speech_service
+import groq_config
 
 app = Flask(__name__)
 
-# --- API KEY & BRIDGE SETUP ---
-API_KEY = os.environ.get("GROQ_API_KEY", "gsk_your_default_here")
+# Groq key — sirf env se; placeholder se connect mat karo
+API_KEY = groq_config.get_groq_api_key()
 
 # ग्लोबल वेरिएबल्स
 BRIDGE_ACTIVE = False
@@ -18,9 +19,16 @@ error_msg = "None"
 
 def initialize_saira():
     global saira_core, BRIDGE_ACTIVE, error_msg
+    if not API_KEY:
+        BRIDGE_ACTIVE = False
+        error_msg = (
+            "GROQ_API_KEY set nahi hai. Railway → Sayra service → Variables → "
+            "GROQ_API_KEY=gsk_... daalo, phir Redeploy."
+        )
+        print(f"[!] {error_msg}")
+        return
     try:
         from main import SairaUltimateMachine
-        # सायरा कोर को इनिशियलाइज़ करना
         saira_core = SairaUltimateMachine(API_KEY)
         BRIDGE_ACTIVE = True
         print("✅ Saira Neural Bridge: ACTIVE")
@@ -71,7 +79,7 @@ def chat():
         except Exception as e:
             return jsonify({"reply": f"Neural Bridge Error: {str(e)}"})
 
-    return jsonify({"reply": f"सायरा ऑफलाइन है। एरर: {error_msg}"})
+    return jsonify({"reply": f"⚠️ {error_msg}"})
 
 @app.route('/status')
 def status():
@@ -93,7 +101,13 @@ def status():
         "live_stats": current_stats,
         "brain": saira_core.get_brain_status() if saira_core else {},
         "speech": speech_service.speech_capabilities(),
+        "groq": groq_config.test_groq_connection(),
     })
+
+
+@app.route("/health/groq")
+def health_groq():
+    return jsonify(groq_config.test_groq_connection())
 
 
 @app.route("/speech/status")
