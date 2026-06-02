@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: sayra
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      # Render PORT khud set karta hai; Dockerfile usse $PORT se uthata hai.
+      - key: GROQ_API_KEY
+        sync: false          # Render dashboard me daalo (secret)
+      - key: MASTER_PASSWORD
+        sync: false          # ek strong password daalo
+      - key: SAIRA_MODEL
+        value: llama-3.3-70b-versatile
+      # Aitotech enterprise se connect karna ho to (optional):
+      - key: AGENTS_API_URL
+        sync: false
+      - key: AGENTS_API_KEY
+        sync: false
