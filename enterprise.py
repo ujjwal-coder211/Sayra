@@ -53,29 +53,38 @@ def _headers() -> dict:
     return h
 
 
-def _get(path: str, timeout: int = 20):
-    """GET helper — error par None/[] safely."""
+def _get(path: str, timeout: int = 20, retries: int = 1):
+    """GET helper — error par None/[] safely.
+
+    Railway cold-start (service so jata hai) pe pehli request slow/fail ho
+    sakti hai, isliye retry karte hain taaki dashboard "offline" galat na dikhaye.
+    """
     if not is_configured():
         return None
-    try:
-        res = requests.get(f"{_base_url()}{path}", headers=_headers(), timeout=timeout)
-        res.raise_for_status()
-        return res.json()
-    except Exception:  # noqa: BLE001
-        return None
+    last_exc = None
+    for attempt in range(retries + 1):
+        try:
+            res = requests.get(f"{_base_url()}{path}", headers=_headers(), timeout=timeout)
+            res.raise_for_status()
+            return res.json()
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+    return None
 
 
-def _post(path: str, body: dict, timeout: int = 30):
+def _post(path: str, body: dict, timeout: int = 30, retries: int = 1):
     if not is_configured():
         return None
-    try:
-        res = requests.post(
-            f"{_base_url()}{path}", json=body, headers=_headers(), timeout=timeout
-        )
-        res.raise_for_status()
-        return res.json()
-    except Exception:  # noqa: BLE001
-        return None
+    for attempt in range(retries + 1):
+        try:
+            res = requests.post(
+                f"{_base_url()}{path}", json=body, headers=_headers(), timeout=timeout
+            )
+            res.raise_for_status()
+            return res.json()
+        except Exception:  # noqa: BLE001
+            pass
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +341,9 @@ def orchestrator_status() -> dict:
 
 def get_overview() -> dict:
     """Dashboard Command Center ke liye sab ek saath + health status."""
-    info = _get("/") or {}
+    # `/` health call ko cold-start ke liye lamba timeout + retries do —
+    # warna Railway sleep se uthte waqt galat "offline" dikh sakta hai.
+    info = _get("/", timeout=35, retries=2) or {}
     online = bool(info)
     db_ok = bool(info.get("supabase_configured"))
     orch = orchestrator_status()
