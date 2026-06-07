@@ -325,11 +325,42 @@ def format_advice() -> str:
     return "\n".join(lines)
 
 
+def orchestrator_status() -> dict:
+    """Company auto-run (running mode) status backend se."""
+    return _get("/orchestrator/status") or {}
+
+
 def get_overview() -> dict:
-    """Dashboard Command Center ke liye sab ek saath."""
+    """Dashboard Command Center ke liye sab ek saath + health status."""
     info = _get("/") or {}
+    online = bool(info)
+    db_ok = bool(info.get("supabase_configured"))
+    orch = orchestrator_status()
+    running = bool(orch.get("running"))
+
+    if not is_configured():
+        state, label = "unlinked", "NOT LINKED"
+    elif not online:
+        state, label = "offline", "BACKEND OFFLINE"
+    elif not db_ok:
+        state, label = "db_error", "DATABASE ERROR"
+    elif running:
+        state, label = "running", "RUNNING"
+    else:
+        state, label = "idle", "IDLE"
+
     return {
         "linked": is_configured(),
+        "online": online,
+        "db_ok": db_ok,
+        "running": running,
+        "state": state,
+        "state_label": label,
+        "health": {
+            "db": db_ok,
+            "llm": bool(info.get("llm_configured")),
+            "n8n": bool(info.get("n8n_configured")),
+        },
         "info": info,
         "finance": get_finance(),
         "pipelines": get_pipelines(limit=8),

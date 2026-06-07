@@ -3,187 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SAIRA AGI - Responsive Console</title>
+    <title>SAIRA — Aitotech Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap');
-        
-        :root { --neon: #22d3ee; }
-        body { background-color: #020617; color: var(--neon); font-family: 'Rajdhani', sans-serif; height: 100vh; height: -webkit-fill-available; margin: 0; display: flex; flex-direction: column; }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+        :root {
+            --neon: #22d3ee;
+            --bg: #060b18;
+            --panel: rgba(13, 22, 41, 0.72);
+            --line: rgba(56, 189, 248, 0.14);
+        }
+        * { box-sizing: border-box; }
+        body {
+            background:
+                radial-gradient(1200px 600px at 80% -10%, rgba(34,211,238,0.10), transparent 60%),
+                radial-gradient(900px 500px at 0% 110%, rgba(168,85,247,0.10), transparent 55%),
+                var(--bg);
+            color: #cbeef7; font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh; min-height: -webkit-fill-available; margin: 0;
+            display: flex; flex-direction: column;
+        }
         html { height: -webkit-fill-available; }
-        .orbitron { font-family: 'Orbitron', sans-serif; }
-        .glass-panel { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(34, 211, 238, 0.15); }
-        
-        /* Scanner Effect */
-        .scanner-line { height: 2px; background: linear-gradient(to right, transparent, var(--neon), transparent); position: absolute; width: 100%; animation: scan 4s linear infinite; opacity: 0.5; }
-        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
-        .mic-active { box-shadow: 0 0 20px #ef4444 !important; border-color: #ef4444 !important; background: rgba(239, 68, 68, 0.1) !important; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        #chat-hub::-webkit-scrollbar { width: 2px; }
-        #chat-hub::-webkit-scrollbar-thumb { background: var(--neon); }
-        
-        canvas { width: 100% !important; height: 40px !important; }
+        .orbitron { font-family: 'Orbitron', sans-serif; letter-spacing: .04em; }
+
+        .glass {
+            background: var(--panel);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--line);
+            box-shadow: 0 10px 40px -20px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.03);
+        }
+        .glow-edge { position: relative; }
+        .glow-edge::before {
+            content:''; position:absolute; inset:0; border-radius:inherit; padding:1px;
+            background: linear-gradient(135deg, rgba(34,211,238,.5), transparent 40%, transparent 60%, rgba(168,85,247,.4));
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; opacity:.6;
+        }
+
+        .scanner-line { height: 2px; background: linear-gradient(to right, transparent, var(--neon), transparent); position:absolute; width:100%; animation: scan 4s linear infinite; opacity:.45; }
+        @keyframes scan { 0%{top:0} 100%{top:100%} }
+        .mic-active { box-shadow: 0 0 22px #ef4444 !important; border-color:#ef4444 !important; background: rgba(239,68,68,.12) !important; animation: pulse 1.4s infinite; }
+        @keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+        #chat-hub::-webkit-scrollbar, #company-view::-webkit-scrollbar { width: 4px; }
+        #chat-hub::-webkit-scrollbar-thumb, #company-view::-webkit-scrollbar-thumb { background: rgba(34,211,238,.5); border-radius: 4px; }
+        canvas { width: 100% !important; height: 44px !important; }
 
         /* Tabs */
-        .tab-btn { font-family: 'Orbitron', sans-serif; font-size: 10px; padding: 7px 16px; border-radius: 9px; border: 1px solid rgba(34,211,238,0.2); background: rgba(15,23,42,0.6); color: #67e8f9; cursor: pointer; transition: all .15s; }
-        .tab-btn.active-tab { background: #0891b2; color: #000; border-color: #22d3ee; }
-        .tab-btn .badge-count { background:#ef4444; color:#fff; border-radius:999px; font-size:8px; padding:1px 6px; margin-left:6px; }
+        .tab-btn { font-family:'Orbitron',sans-serif; font-size:10px; padding:8px 18px; border-radius:10px; border:1px solid var(--line); background: rgba(13,22,41,.6); color:#7dd3fc; cursor:pointer; transition: all .18s; display:inline-flex; align-items:center; gap:6px; }
+        .tab-btn:hover { border-color: rgba(34,211,238,.45); color:#bff0fb; }
+        .tab-btn.active-tab { background: linear-gradient(135deg,#0891b2,#0e7490); color:#001016; border-color:#22d3ee; box-shadow:0 0 18px -4px rgba(34,211,238,.6); }
+        .badge-count { background:#ef4444; color:#fff; border-radius:999px; font-size:8px; padding:1px 6px; box-shadow:0 0 10px rgba(239,68,68,.6); }
 
-        /* Status chips */
-        .chip { font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.3); text-transform: capitalize; white-space: nowrap; }
+        /* Status dot + pill */
+        .live-dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
+        .blink { animation: blink 1.4s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+        .pill { font-family:'Orbitron',sans-serif; font-size:9px; padding:4px 10px; border-radius:999px; border:1px solid currentColor; display:inline-flex; align-items:center; gap:6px; }
+
+        /* Chips */
+        .chip { font-size:10px; font-weight:600; padding:2px 9px; border-radius:999px; border:1px solid rgba(34,211,238,.3); text-transform:capitalize; white-space:nowrap; }
         .chip.pending { color:#fbbf24; border-color:rgba(251,191,36,.4); }
         .chip.in_progress { color:#38bdf8; border-color:rgba(56,189,248,.5); background:rgba(56,189,248,.1); }
-        .chip.completed { color:#34d399; border-color:rgba(52,211,153,.5); background:rgba(52,211,153,.1); }
+        .chip.completed { color:#34d399; border-color:rgba(52,211,153,.5); background:rgba(52,211,153,.12); }
         .chip.failed { color:#f87171; border-color:rgba(248,113,113,.5); }
-        .arrow { color:#475569; font-size:11px; margin:0 1px; }
-        .cc-input { width:100%; background:rgba(2,6,23,.6); border:1px solid rgba(34,211,238,.2); border-radius:8px; padding:8px 10px; color:#e2f6fb; font-size:12px; font-family:'Rajdhani',sans-serif; }
-        .cc-btn { font-family:'Orbitron',sans-serif; font-size:10px; padding:7px 12px; border-radius:8px; background:#0891b2; color:#000; cursor:pointer; border:none; }
-        .cc-btn.ghost { background:transparent; border:1px solid rgba(34,211,238,.3); color:#67e8f9; }
-        #company-view::-webkit-scrollbar { width:3px; }
-        #company-view::-webkit-scrollbar-thumb { background:var(--neon); }
+        .arrow { color:#3b556e; font-size:11px; margin:0 1px; }
+
+        .cc-input { width:100%; background:rgba(3,8,20,.7); border:1px solid rgba(34,211,238,.2); border-radius:9px; padding:9px 11px; color:#e2f6fb; font-size:13px; font-family:'Rajdhani',sans-serif; outline:none; transition:border .15s; }
+        .cc-input:focus { border-color: rgba(34,211,238,.6); }
+        .cc-btn { font-family:'Orbitron',sans-serif; font-size:10px; padding:9px 14px; border-radius:9px; background:linear-gradient(135deg,#0891b2,#0e7490); color:#001016; cursor:pointer; border:none; font-weight:700; transition:transform .1s, box-shadow .15s; }
+        .cc-btn:hover { box-shadow:0 0 16px -3px rgba(34,211,238,.7); }
+        .cc-btn:active { transform:scale(.96); }
+        .cc-btn.ghost { background:transparent; border:1px solid rgba(34,211,238,.35); color:#7dd3fc; }
+        .cc-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+        .stat-card { position:relative; overflow:hidden; border-radius:14px; padding:14px; }
+        .stat-card .big { font-family:'Orbitron',sans-serif; font-weight:700; }
+        .label { font-size:8px; letter-spacing:.12em; text-transform:uppercase; opacity:.55; }
+        .sec-title { font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:.06em; display:flex; align-items:center; gap:7px; padding-bottom:8px; margin-bottom:10px; border-bottom:1px solid var(--line); }
     </style>
 </head>
 <body class="p-2 md:p-4 gap-3">
 
-    <header class="flex justify-between items-center px-3 py-2 glass-panel rounded-xl shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="relative w-10 h-10 flex items-center justify-center shrink-0">
-                <div class="absolute inset-0 border border-cyan-500 rounded-full animate-spin"></div>
-                <span class="orbitron text-[10px] font-bold">SA</span>
+    <!-- ===================== HEADER ===================== -->
+    <header class="flex justify-between items-center px-3 md:px-4 py-2.5 glass glow-edge rounded-2xl shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="relative w-9 h-9 md:w-11 md:h-11 flex items-center justify-center shrink-0">
+                <div class="absolute inset-0 border border-cyan-400/70 rounded-full animate-spin" style="animation-duration:6s"></div>
+                <div class="absolute inset-1.5 border border-purple-400/40 rounded-full animate-spin" style="animation-duration:9s; animation-direction:reverse"></div>
+                <span class="orbitron text-[10px] font-bold text-cyan-200">SA</span>
             </div>
             <div class="min-w-0">
-                <h1 class="text-sm md:text-xl orbitron font-bold tracking-tighter truncate">SAIRA <span class="text-[8px] md:text-[10px] text-cyan-600">V17.5</span></h1>
-                <p class="text-[8px] md:text-[10px] uppercase opacity-60 truncate">Neural Link: Active</p>
+                <h1 class="text-base md:text-xl orbitron font-black tracking-tight truncate text-white">SAIRA <span class="text-[8px] md:text-[10px] text-cyan-500 align-top">v18</span></h1>
+                <p class="text-[8px] md:text-[10px] uppercase opacity-60 truncate">Aitotech · Command Center</p>
             </div>
         </div>
-        <div class="text-right orbitron shrink-0">
-            <div id="clock" class="text-xs md:text-lg font-bold">00:00:00</div>
-            <div class="text-[7px] md:text-[9px] text-green-500 animate-pulse uppercase" id="speech-mode">Voice: …</div>
+        <div class="flex items-center gap-2 md:gap-4 shrink-0">
+            <span id="company-pill" class="pill text-slate-400" title="Company status"><span class="live-dot bg-slate-500"></span>—</span>
+            <div class="text-right orbitron">
+                <div id="clock" class="text-xs md:text-lg font-bold text-cyan-100">00:00:00</div>
+                <div class="text-[7px] md:text-[9px] text-green-400 uppercase blink" id="speech-mode">Voice: …</div>
+            </div>
         </div>
     </header>
 
-    <nav class="flex gap-2 shrink-0 px-1 mt-1">
+    <!-- ===================== TABS ===================== -->
+    <nav class="flex gap-2 shrink-0 px-1 mt-2">
         <button id="tab-console" class="tab-btn active-tab" onclick="switchView('console')">🛰 CONSOLE</button>
         <button id="tab-company" class="tab-btn" onclick="switchView('company')">🏢 COMPANY <span id="advice-badge" class="badge-count hidden">0</span></button>
     </nav>
 
-    <main id="console-view" class="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-3 overflow-hidden">
-        
+    <!-- ===================== CONSOLE (chat) ===================== -->
+    <main id="console-view" class="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-3 overflow-hidden mt-2 min-h-0">
         <aside class="flex flex-row lg:flex-col gap-3 shrink-0">
-            <div class="glass-panel p-3 rounded-xl relative overflow-hidden flex-1 lg:flex-none lg:h-64">
+            <div class="glass glow-edge p-3 rounded-2xl relative overflow-hidden flex-1 lg:flex-none lg:h-64">
                 <div class="scanner-line"></div>
-                <h3 class="orbitron text-[9px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">SYSTEM HEALTH</h3>
+                <h3 class="sec-title text-cyan-400">SYSTEM HEALTH</h3>
                 <div class="space-y-3">
                     <div>
-                        <div class="flex justify-between text-[8px] mb-1"><span>LOAD</span><span id="load-pct">5%</span></div>
-                        <div class="h-1 bg-cyan-950 rounded-full overflow-hidden"><div id="load-bar" class="h-full bg-cyan-500 transition-all duration-700" style="width: 5%"></div></div>
+                        <div class="flex justify-between text-[8px] mb-1"><span class="opacity-60">LOAD</span><span id="load-pct">5%</span></div>
+                        <div class="h-1.5 bg-cyan-950 rounded-full overflow-hidden"><div id="load-bar" class="h-full bg-gradient-to-r from-cyan-400 to-cyan-600 transition-all duration-700" style="width:5%"></div></div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div class="bg-cyan-950/30 p-1.5 rounded border border-cyan-900/30 text-[9px]">
-                            <p class="opacity-50">TEMP</p>
-                            <p id="temp-stat" class="font-bold">36°C</p>
+                        <div class="bg-cyan-950/30 p-2 rounded-lg border border-cyan-900/30 text-[9px]">
+                            <p class="opacity-50">TEMP</p><p id="temp-stat" class="font-bold text-cyan-200">36°C</p>
                         </div>
-                        <div class="bg-cyan-950/30 p-1.5 rounded border border-cyan-900/30 text-[9px]">
-                            <p class="opacity-50">BRIDGE</p>
-                            <p id="bridge-stat" class="font-bold text-red-500">WAITING</p>
+                        <div class="bg-cyan-950/30 p-2 rounded-lg border border-cyan-900/30 text-[9px]">
+                            <p class="opacity-50">BRIDGE</p><p id="bridge-stat" class="font-bold text-red-400">WAITING</p>
                         </div>
                     </div>
                     <canvas id="neuralWave" class="hidden md:block"></canvas>
                 </div>
             </div>
-            
-            <div class="glass-panel p-3 rounded-xl flex flex-col justify-center items-center lg:items-start flex-1 lg:flex-none">
-                <h3 class="orbitron text-[9px] text-cyan-500 uppercase">Memory</h3>
-                <div class="flex items-baseline gap-1">
-                    <span class="text-xl font-bold text-white leading-none">1024</span>
-                    <span class="text-[7px] opacity-40">NODES</span>
-                </div>
+            <div class="glass glow-edge p-3 rounded-2xl flex flex-col justify-center items-center lg:items-start flex-1 lg:flex-none">
+                <h3 class="orbitron text-[9px] text-cyan-400 uppercase">Memory</h3>
+                <div class="flex items-baseline gap-1"><span class="text-2xl font-bold text-white leading-none orbitron">1024</span><span class="text-[7px] opacity-40">NODES</span></div>
             </div>
         </aside>
 
         <section class="flex-1 lg:col-span-3 flex flex-col gap-3 overflow-hidden min-h-0">
-            <div id="chat-hub" class="glass-panel flex-1 rounded-xl p-3 overflow-y-auto flex flex-col gap-3">
+            <div id="chat-hub" class="glass glow-edge flex-1 rounded-2xl p-3 md:p-4 overflow-y-auto flex flex-col gap-3 min-h-[40vh]">
                 <div class="flex gap-2">
-                    <div class="w-8 h-8 rounded bg-cyan-900/50 flex items-center justify-center border border-cyan-500/30 shrink-0">
-                        <span class="text-[10px] font-bold">SR</span>
-                    </div>
-                    <div class="max-w-[85%] bg-cyan-950/40 p-2.5 rounded-r-lg rounded-bl-lg border border-cyan-900/20 text-xs text-cyan-100">
-                        प्रणाम मास्टर उज्ज्वल। सायरा ऑनलाइन है।
-                    </div>
+                    <div class="w-8 h-8 rounded-lg bg-cyan-900/50 flex items-center justify-center border border-cyan-500/30 shrink-0"><span class="text-[10px] font-bold">SR</span></div>
+                    <div class="max-w-[85%] bg-cyan-950/40 p-3 rounded-r-xl rounded-bl-xl border border-cyan-900/20 text-sm text-cyan-100">प्रणाम मास्टर उज्ज्वल। सायरा ऑनलाइन है — Aitotech ka pura controls aapke saamne hai.</div>
                 </div>
             </div>
-
-            <div class="glass-panel p-1.5 rounded-xl flex gap-2 items-center shrink-0">
-                <button id="mic-trigger" type="button" title="Mic — bol kar bhejein"
-                    class="w-10 h-10 flex items-center justify-center rounded-lg border border-cyan-500/20 active:scale-95 transition-all">
-                    <span id="mic-icon">🎤</span>
-                </button>
-                
-                <input type="text" id="query-input" 
-                    class="flex-1 bg-transparent border-none outline-none px-2 py-2 text-sm text-white placeholder:text-cyan-900" 
-                    placeholder="लिखिए मास्टर...">
-                
-                <button type="button" onclick="executeCommand()" 
-                    class="bg-cyan-600 text-black orbitron font-bold text-[10px] px-4 h-10 rounded-lg active:scale-95 transition-all">
-                    SEND
-                </button>
+            <div class="glass glow-edge p-2 rounded-2xl flex gap-2 items-center shrink-0">
+                <button id="mic-trigger" type="button" title="Mic" class="w-11 h-11 flex items-center justify-center rounded-xl border border-cyan-500/20 active:scale-95 transition-all"><span id="mic-icon">🎤</span></button>
+                <input type="text" id="query-input" class="flex-1 bg-transparent border-none outline-none px-2 py-2 text-sm text-white placeholder:text-cyan-800" placeholder="लिखिए मास्टर...">
+                <button type="button" onclick="executeCommand()" class="bg-gradient-to-br from-cyan-500 to-cyan-700 text-black orbitron font-bold text-[10px] px-5 h-11 rounded-xl active:scale-95 transition-all">SEND</button>
             </div>
             <p id="speech-hint" class="text-[9px] text-cyan-700/80 text-center shrink-0 px-2"></p>
         </section>
     </main>
 
     <!-- ===================== COMPANY (Command Center) ===================== -->
-    <div id="company-view" class="hidden flex-1 overflow-y-auto flex flex-col gap-3 pb-4">
+    <div id="company-view" class="hidden flex-1 overflow-y-auto flex flex-col gap-3 pb-4 mt-2">
 
-        <!-- Profit cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
-            <div class="glass-panel rounded-xl p-3">
-                <p class="text-[8px] uppercase opacity-50">Projected profit</p>
-                <p id="cc-proj-profit" class="text-lg font-bold text-cyan-300">₹0</p>
+        <!-- Status banner -->
+        <div id="cc-status-banner" class="glass glow-edge rounded-2xl px-4 py-3 flex items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <span id="cc-status-dot" class="live-dot bg-slate-500"></span>
+                <div class="min-w-0">
+                    <p id="cc-status-title" class="orbitron text-sm font-bold text-slate-300">CONNECTING…</p>
+                    <p id="cc-status-sub" class="text-[11px] opacity-60 truncate">Aitotech engine se link ho rahe hain…</p>
+                </div>
             </div>
-            <div class="glass-panel rounded-xl p-3">
-                <p class="text-[8px] uppercase opacity-50">Actual profit</p>
-                <p id="cc-act-profit" class="text-lg font-bold text-green-400">₹0</p>
-            </div>
-            <div class="glass-panel rounded-xl p-3">
-                <p class="text-[8px] uppercase opacity-50">Actual revenue</p>
-                <p id="cc-act-rev" class="text-lg font-bold text-white">₹0</p>
-            </div>
-            <div class="glass-panel rounded-xl p-3">
-                <p class="text-[8px] uppercase opacity-50">Deals (won)</p>
-                <p id="cc-deals" class="text-lg font-bold text-white">0</p>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="hidden md:flex items-center gap-1.5 text-[9px]"><span id="h-db" class="live-dot bg-slate-600"></span>DB</span>
+                <span class="hidden md:flex items-center gap-1.5 text-[9px]"><span id="h-llm" class="live-dot bg-slate-600"></span>LLM</span>
+                <span class="hidden md:flex items-center gap-1.5 text-[9px]"><span id="h-n8n" class="live-dot bg-slate-600"></span>n8n</span>
             </div>
         </div>
 
-        <!-- Sayra advice inbox -->
-        <div id="cc-advice-wrap" class="glass-panel rounded-xl p-3 hidden shrink-0" style="border-color:rgba(168,85,247,.4)">
-            <h3 class="orbitron text-[10px] mb-2 text-purple-300 border-b border-purple-900/40 pb-1">💬 SAYRA — MASTER KI ADVICE CHAHIYE</h3>
+        <!-- Profit cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 shrink-0">
+            <div class="glass glow-edge stat-card"><p class="label">Projected profit</p><p id="cc-proj-profit" class="big text-xl text-cyan-300 mt-1">₹0</p></div>
+            <div class="glass glow-edge stat-card"><p class="label">Actual profit</p><p id="cc-act-profit" class="big text-xl text-green-400 mt-1">₹0</p></div>
+            <div class="glass glow-edge stat-card"><p class="label">Actual revenue</p><p id="cc-act-rev" class="big text-xl text-white mt-1">₹0</p></div>
+            <div class="glass glow-edge stat-card"><p class="label">Deals</p><p id="cc-deals" class="big text-xl text-white mt-1">0</p></div>
+        </div>
+
+        <!-- Advice inbox -->
+        <div id="cc-advice-wrap" class="glass glow-edge rounded-2xl p-3 md:p-4 hidden shrink-0" style="border-color:rgba(168,85,247,.4)">
+            <h3 class="sec-title text-purple-300" style="border-color:rgba(168,85,247,.3)">💬 SAYRA — MASTER KI ADVICE CHAHIYE</h3>
             <div id="cc-advice-list" class="space-y-2"></div>
         </div>
 
         <div class="grid lg:grid-cols-2 gap-3">
-            <!-- Workflow timeline -->
-            <div class="glass-panel rounded-xl p-3">
-                <h3 class="orbitron text-[10px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">🔄 WORKFLOW — AGENT PIPELINES</h3>
+            <div class="glass glow-edge rounded-2xl p-3 md:p-4">
+                <h3 class="sec-title text-cyan-400">🔄 WORKFLOW — AGENT PIPELINES</h3>
                 <div id="cc-pipelines" class="space-y-2 text-xs"><p class="opacity-40 text-[11px]">Loading…</p></div>
             </div>
-
-            <!-- Right column: opportunities + leads -->
             <div class="flex flex-col gap-3">
-                <div class="glass-panel rounded-xl p-3">
-                    <h3 class="orbitron text-[10px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">🎯 OPPORTUNITIES</h3>
+                <div class="glass glow-edge rounded-2xl p-3 md:p-4">
+                    <h3 class="sec-title text-cyan-400">🎯 OPPORTUNITIES</h3>
                     <div id="cc-opps" class="space-y-1 text-xs"><p class="opacity-40 text-[11px]">—</p></div>
                 </div>
-                <div class="glass-panel rounded-xl p-3">
-                    <h3 class="orbitron text-[10px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">📥 LEADS</h3>
+                <div class="glass glow-edge rounded-2xl p-3 md:p-4">
+                    <h3 class="sec-title text-cyan-400">📥 LEADS</h3>
                     <div id="cc-leads" class="space-y-1 text-xs"><p class="opacity-40 text-[11px]">—</p></div>
                 </div>
             </div>
         </div>
 
         <!-- Start pipeline -->
-        <div class="glass-panel rounded-xl p-3 shrink-0">
-            <h3 class="orbitron text-[10px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">🚀 NAYA PIPELINE SHURU KAREIN</h3>
+        <div class="glass glow-edge rounded-2xl p-3 md:p-4 shrink-0">
+            <h3 class="sec-title text-cyan-400">🚀 NAYA PIPELINE SHURU KAREIN</h3>
             <div class="flex flex-col md:flex-row gap-2">
                 <input id="cc-pp-title" class="cc-input flex-[2]" placeholder="Idea: SMB ke liye invoice automation">
                 <input id="cc-pp-market" class="cc-input flex-1" placeholder="Market (optional)">
@@ -191,13 +217,13 @@
                 <button class="cc-btn shrink-0" onclick="startPipeline()">+ START</button>
                 <button class="cc-btn ghost shrink-0" onclick="runTick()">⚡ RUN AGENTS</button>
             </div>
-            <p id="cc-msg" class="text-[10px] text-cyan-600 mt-2"></p>
+            <p id="cc-msg" class="text-[11px] text-cyan-500 mt-2 min-h-[14px]"></p>
         </div>
     </div>
 
     <script src="/static/js/speech.js"></script>
     <script>
-        const { escapeHtml } = window.SairaSpeechUtil || { escapeHtml: (s) => s };
+        const { escapeHtml } = window.SairaSpeechUtil || { escapeHtml: (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) };
         let waveSpeed = 0.05;
 
         setInterval(() => {
@@ -208,14 +234,14 @@
         const canvas = document.getElementById('neuralWave');
         const ctx = canvas.getContext('2d');
         let offset = 0;
-        function resize() { canvas.width = canvas.offsetWidth; canvas.height = 40; }
+        function resize() { canvas.width = canvas.offsetWidth; canvas.height = 44; }
         window.addEventListener('resize', resize); resize();
         function draw() {
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            ctx.beginPath(); ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.2;
             for(let x=0; x<canvas.width; x++) {
-                const amp = waveSpeed > 0.1 ? 12 : 6;
-                const y = 20 + Math.sin(x*0.05 + offset) * amp;
+                const amp = waveSpeed > 0.1 ? 13 : 6;
+                const y = 22 + Math.sin(x*0.05 + offset) * amp;
                 x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
             }
             ctx.stroke(); offset += waveSpeed; requestAnimationFrame(draw);
@@ -224,21 +250,14 @@
 
         const speech = new SairaSpeech({
             lang: 'hi-IN',
-            onTranscript: (text) => {
-                document.getElementById('query-input').value = text;
-                executeCommand();
-            },
+            onTranscript: (text) => { document.getElementById('query-input').value = text; executeCommand(); },
             onError: (msg) => {
                 const el = document.getElementById('speech-hint');
                 if (el) { el.textContent = msg; el.classList.add('text-red-400'); }
-                setTimeout(() => { if (el) { el.textContent = ''; el.classList.remove('text-red-400'); } }, 5000);
+                setTimeout(() => { if (el) { el.textContent=''; el.classList.remove('text-red-400'); } }, 5000);
             },
-            onStatus: (label) => {
-                const el = document.getElementById('speech-mode');
-                if (el) el.textContent = label;
-            },
+            onStatus: (label) => { const el = document.getElementById('speech-mode'); if (el) el.textContent = label; },
         });
-
         document.getElementById('mic-trigger').addEventListener('click', () => speech.toggleListen());
 
         async function refreshGroqStatus() {
@@ -247,71 +266,45 @@
                 const data = await res.json();
                 const g = data.groq || {};
                 const bridge = document.getElementById('bridge-stat');
-                if (g.connected) {
-                    bridge.innerText = 'GROQ OK';
-                    bridge.style.color = '#22d3ee';
-                } else if (g.configured) {
-                    bridge.innerText = 'GROQ ERR';
-                    bridge.style.color = '#ef4444';
-                    if (g.error) {
-                        document.getElementById('speech-hint').textContent = g.error.slice(0, 120);
-                    }
-                } else {
-                    bridge.innerText = 'NO KEY';
-                    bridge.style.color = '#ef4444';
-                    document.getElementById('speech-hint').textContent =
-                        'Railway Variables me GROQ_API_KEY=gsk_... set karo, phir Redeploy.';
-                }
+                if (g.connected) { bridge.innerText='GROQ OK'; bridge.style.color='#22d3ee'; }
+                else if (g.configured) { bridge.innerText='GROQ ERR'; bridge.style.color='#ef4444'; if (g.error) document.getElementById('speech-hint').textContent = g.error.slice(0,120); }
+                else { bridge.innerText='NO KEY'; bridge.style.color='#ef4444'; document.getElementById('speech-hint').textContent='Railway Variables me GROQ_API_KEY=gsk_... set karo, phir Redeploy.'; }
             } catch (_) {}
         }
-        refreshGroqStatus();
-        setInterval(refreshGroqStatus, 60000);
+        refreshGroqStatus(); setInterval(refreshGroqStatus, 60000);
 
         async function executeCommand() {
             const input = document.getElementById('query-input');
             const chat = document.getElementById('chat-hub');
-            const q = input.value.trim();
-            if(!q) return;
-
+            const q = input.value.trim(); if(!q) return;
             document.getElementById('bridge-stat').innerText = "LINKING";
             document.getElementById('bridge-stat').style.color = "#fbbf24";
             document.getElementById('load-bar').style.width = "95%";
-
-            chat.innerHTML += `<div class="flex justify-end mb-2"><div class="bg-white/5 p-2 rounded-lg border border-white/10 text-xs max-w-[85%]">${escapeHtml(q)}</div></div>`;
-            input.value = '';
-            chat.scrollTop = chat.scrollHeight;
-            waveSpeed = 0.8;
+            chat.innerHTML += `<div class="flex justify-end"><div class="bg-white/5 p-2.5 rounded-l-xl rounded-br-xl border border-white/10 text-sm max-w-[85%]">${escapeHtml(q)}</div></div>`;
+            input.value = ''; chat.scrollTop = chat.scrollHeight; waveSpeed = 0.8;
             try {
-                const res = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({query: q})
-                });
+                const res = await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query:q}) });
                 const data = await res.json();
                 const reply = data.reply || '…';
-
                 document.getElementById('bridge-stat').innerText = "ACTIVE";
                 document.getElementById('bridge-stat').style.color = "#22d3ee";
                 document.getElementById('load-bar').style.width = "10%";
-                chat.innerHTML += `<div class="flex gap-2 mb-2"><div class="w-8 h-8 rounded bg-cyan-900/50 flex items-center justify-center border border-cyan-500/30 shrink-0"><span class="text-[10px]">SR</span></div><div class="bg-cyan-950/40 p-2.5 rounded-lg border border-cyan-900/20 text-xs text-cyan-100 max-w-[85%]">${escapeHtml(reply)}</div></div>`;
+                chat.innerHTML += `<div class="flex gap-2"><div class="w-8 h-8 rounded-lg bg-cyan-900/50 flex items-center justify-center border border-cyan-500/30 shrink-0"><span class="text-[10px]">SR</span></div><div class="bg-cyan-950/40 p-3 rounded-r-xl rounded-bl-xl border border-cyan-900/20 text-sm text-cyan-100 max-w-[85%] whitespace-pre-wrap">${escapeHtml(reply)}</div></div>`;
                 speech.speak(reply);
             } catch (e) {
                 document.getElementById('bridge-stat').innerText = "ERROR";
                 document.getElementById('bridge-stat').style.color = "#ef4444";
             }
-
-            waveSpeed = 0.05;
-            chat.scrollTop = chat.scrollHeight;
+            waveSpeed = 0.05; chat.scrollTop = chat.scrollHeight;
         }
         document.getElementById('query-input').addEventListener('keypress', (e) => e.key === 'Enter' && executeCommand());
 
-        // ===================== COMMAND CENTER (COMPANY) =====================
+        // ===================== COMMAND CENTER =====================
         let companyTimer = null;
 
         function money(n) {
             const v = Number(n || 0);
-            try { return '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: 0 }); }
-            catch (_) { return '₹' + v; }
+            try { return '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: 0 }); } catch (_) { return '₹' + v; }
         }
 
         function switchView(v) {
@@ -320,25 +313,51 @@
             document.getElementById('company-view').classList.toggle('hidden', !isCompany);
             document.getElementById('tab-console').classList.toggle('active-tab', !isCompany);
             document.getElementById('tab-company').classList.toggle('active-tab', isCompany);
-            if (isCompany) {
-                loadCompany();
-                if (!companyTimer) companyTimer = setInterval(loadCompany, 8000);
-            } else if (companyTimer) {
-                clearInterval(companyTimer); companyTimer = null;
-            }
+            if (isCompany) { loadCompany(); if (!companyTimer) companyTimer = setInterval(loadCompany, 8000); }
+            else if (companyTimer) { clearInterval(companyTimer); companyTimer = null; }
+        }
+
+        const STATE_STYLE = {
+            running:  { color:'#34d399', dot:'#34d399', title:'COMPANY RUNNING', sub:'Agents autonomously kaam kar rahe hain.' },
+            idle:     { color:'#38bdf8', dot:'#38bdf8', title:'COMPANY IDLE',    sub:'Engine online — abhi koi pending task nahi. Pipeline shuru karein.' },
+            db_error: { color:'#f87171', dot:'#f87171', title:'DATABASE ERROR',  sub:'Railway → Aitotech-agents me SUPABASE_KEY (legacy service_role eyJ... key) set karke Redeploy karein.' },
+            offline:  { color:'#f87171', dot:'#f87171', title:'BACKEND OFFLINE',  sub:'Aitotech-agents service down hai — Railway pe check karein.' },
+            unlinked: { color:'#fbbf24', dot:'#fbbf24', title:'NOT LINKED',       sub:'Sayra Railway me ENTERPRISE_API_URL = Aitotech-agents URL set karein.' },
+        };
+
+        function setHealthDot(id, ok) {
+            const el = document.getElementById(id);
+            el.style.background = ok ? '#34d399' : '#64748b';
+            el.classList.toggle('blink', !!ok);
+        }
+
+        function renderStatus(d) {
+            const st = STATE_STYLE[d.state] || STATE_STYLE.offline;
+            const dot = document.getElementById('cc-status-dot');
+            dot.style.background = st.dot; dot.classList.toggle('blink', d.state === 'running');
+            document.getElementById('cc-status-title').textContent = st.title;
+            document.getElementById('cc-status-title').style.color = st.color;
+            document.getElementById('cc-status-sub').textContent = st.sub;
+            const h = d.health || {};
+            setHealthDot('h-db', h.db); setHealthDot('h-llm', h.llm); setHealthDot('h-n8n', h.n8n);
+            // header pill
+            const pill = document.getElementById('company-pill');
+            pill.style.color = st.color;
+            pill.innerHTML = `<span class="live-dot ${d.state==='running'?'blink':''}" style="background:${st.dot}"></span>${st.title.replace('COMPANY ','')}`;
         }
 
         async function loadCompany() {
             try {
                 const res = await fetch('/enterprise/overview');
                 const d = await res.json();
+                renderStatus(d);
                 renderFinance(d.finance || {});
                 renderAdvice(d.advice || []);
-                renderPipelines(d.pipelines || []);
+                renderPipelines(d.pipelines || [], d.state);
                 renderList('cc-opps', (d.opportunities || []).map(o => `[${o.status}] ${o.title}`));
                 renderList('cc-leads', (d.leads || []).map(l => `${l.name || l.email || 'Unknown'} · ${l.status}`));
             } catch (_) {
-                document.getElementById('cc-msg').textContent = 'Enterprise se connect nahi hua (ENTERPRISE_API_URL check karein).';
+                renderStatus({ state:'offline', health:{} });
             }
         }
 
@@ -346,46 +365,44 @@
             document.getElementById('cc-proj-profit').textContent = money(f.projected_profit);
             document.getElementById('cc-act-profit').textContent = money(f.actual_profit);
             document.getElementById('cc-act-rev').textContent = money(f.actual_revenue);
-            document.getElementById('cc-deals').textContent = `${f.deal_count || 0} (${f.won_count || 0} won)`;
+            document.getElementById('cc-deals').textContent = `${f.deal_count || 0} · ${f.won_count || 0} won`;
         }
 
         function renderAdvice(list) {
             const wrap = document.getElementById('cc-advice-wrap');
             const el = document.getElementById('cc-advice-list');
             const badge = document.getElementById('advice-badge');
-            if (!list.length) {
-                wrap.classList.add('hidden');
-                badge.classList.add('hidden');
-                el.innerHTML = '';
-                return;
-            }
-            wrap.classList.remove('hidden');
-            badge.classList.remove('hidden');
-            badge.textContent = list.length;
+            if (!list.length) { wrap.classList.add('hidden'); badge.classList.add('hidden'); el.innerHTML=''; return; }
+            wrap.classList.remove('hidden'); badge.classList.remove('hidden'); badge.textContent = list.length;
             el.innerHTML = list.map(a => {
                 const opts = (a.options && a.options.length ? a.options : ['Approve & continue', 'Reject']);
                 const btns = opts.map(o => {
                     const ghost = o.toLowerCase().includes('reject') ? 'ghost' : '';
                     return `<button class="cc-btn ${ghost}" onclick="answerAdvice('${a.id}', this)">${escapeHtml(o)}</button>`;
                 }).join('');
-                return `<div class="bg-slate-900/60 border border-purple-900/30 rounded-lg p-2.5">
-                    <div class="text-xs text-purple-100 mb-1">${escapeHtml(a.question || '')}</div>
-                    ${a.context ? `<div class="text-[10px] opacity-50 max-h-20 overflow-auto mb-2 whitespace-pre-wrap">${escapeHtml(a.context.slice(0, 500))}…</div>` : ''}
+                return `<div class="bg-slate-900/60 border border-purple-900/30 rounded-xl p-3">
+                    <div class="text-sm text-purple-100 mb-1">${escapeHtml(a.question || '')}</div>
+                    ${a.context ? `<div class="text-[10px] opacity-50 max-h-24 overflow-auto mb-2 whitespace-pre-wrap">${escapeHtml(a.context.slice(0,500))}…</div>` : ''}
                     <textarea id="adv-${a.id}" class="cc-input mb-2" rows="2" placeholder="Master ki advice agents ke liye (optional)…"></textarea>
                     <div class="flex gap-2 flex-wrap">${btns}</div>
                 </div>`;
             }).join('');
         }
 
-        function renderPipelines(list) {
+        function renderPipelines(list, state) {
             const el = document.getElementById('cc-pipelines');
-            if (!list.length) { el.innerHTML = '<p class="opacity-40 text-[11px]">Abhi koi pipeline nahi — neeche se ek shuru karein.</p>'; return; }
+            if (!list.length) {
+                const hint = (state === 'db_error' || state === 'offline' || state === 'unlinked')
+                    ? 'Engine connect hone par yahan live workflow dikhega.'
+                    : 'Abhi koi pipeline nahi — neeche se ek shuru karein.';
+                el.innerHTML = `<p class="opacity-40 text-[11px]">${hint}</p>`; return;
+            }
             el.innerHTML = list.map(p => {
                 const chips = (p.steps || []).map((s, i) =>
                     `<span class="chip ${s.status}">${escapeHtml(s.agent_type)}</span>${i < p.steps.length - 1 ? '<span class="arrow">→</span>' : ''}`
                 ).join('');
-                return `<div class="bg-slate-900/40 border border-cyan-900/30 rounded-lg p-2">
-                    <div class="font-bold text-[11px] text-cyan-200 mb-1.5 truncate">${escapeHtml(p.title || 'Pipeline')}</div>
+                return `<div class="bg-slate-900/40 border border-cyan-900/30 rounded-xl p-2.5">
+                    <div class="font-bold text-[12px] text-cyan-200 mb-1.5 truncate">${escapeHtml(p.title || 'Pipeline')}</div>
                     <div class="flex flex-wrap items-center gap-1">${chips}</div>
                 </div>`;
             }).join('');
@@ -394,7 +411,7 @@
         function renderList(id, items) {
             const el = document.getElementById(id);
             if (!items.length) { el.innerHTML = '<p class="opacity-40 text-[11px]">—</p>'; return; }
-            el.innerHTML = items.map(t => `<div class="text-[11px] text-cyan-100 border-b border-cyan-900/20 pb-1">${escapeHtml(t)}</div>`).join('');
+            el.innerHTML = items.map(t => `<div class="text-[12px] text-cyan-100 border-b border-cyan-900/20 pb-1">${escapeHtml(t)}</div>`).join('');
         }
 
         async function answerAdvice(id, btn) {
@@ -403,44 +420,33 @@
             const response = ta ? ta.value.trim() : '';
             btn.disabled = true;
             try {
-                const res = await fetch(`/enterprise/advice/${id}/answer`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ decision, response })
-                });
+                const res = await fetch(`/enterprise/advice/${id}/answer`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ decision, response }) });
                 const d = await res.json();
                 document.getElementById('cc-msg').textContent = d.message || 'Advice bhej di.';
-            } catch (_) {
-                document.getElementById('cc-msg').textContent = 'Advice bhejne me dikkat.';
-            }
+            } catch (_) { document.getElementById('cc-msg').textContent = 'Advice bhejne me dikkat.'; }
             loadCompany();
         }
 
         async function startPipeline() {
             const title = document.getElementById('cc-pp-title').value.trim();
             if (!title) { document.getElementById('cc-msg').textContent = 'Pehle idea likhein.'; return; }
-            const body = {
-                title,
-                market: document.getElementById('cc-pp-market').value.trim(),
-                region: document.getElementById('cc-pp-region').value.trim()
-            };
-            const res = await fetch('/enterprise/pipeline', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-            });
-            const d = await res.json();
-            document.getElementById('cc-msg').textContent = d.message || (d.ok ? 'Pipeline shuru!' : 'Pipeline start nahi hua.');
-            document.getElementById('cc-pp-title').value = '';
+            const body = { title, market: document.getElementById('cc-pp-market').value.trim(), region: document.getElementById('cc-pp-region').value.trim() };
+            try {
+                const res = await fetch('/enterprise/pipeline', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                const d = await res.json();
+                document.getElementById('cc-msg').textContent = d.message || (d.ok ? 'Pipeline shuru!' : 'Pipeline start nahi hua.');
+                document.getElementById('cc-pp-title').value = '';
+            } catch (_) { document.getElementById('cc-msg').textContent = 'Pipeline start fail (engine offline?).'; }
             loadCompany();
         }
 
         async function runTick() {
             document.getElementById('cc-msg').textContent = 'Agents chal rahe hain…';
             try {
-                const res = await fetch('/enterprise/tick', { method: 'POST' });
+                const res = await fetch('/enterprise/tick', { method:'POST' });
                 const d = await res.json();
                 document.getElementById('cc-msg').textContent = `Orchestrator ne ${d.processed || 0} task process kiye.`;
-            } catch (_) {
-                document.getElementById('cc-msg').textContent = 'Orchestrator tick fail.';
-            }
+            } catch (_) { document.getElementById('cc-msg').textContent = 'Orchestrator tick fail.'; }
             loadCompany();
         }
     </script>
