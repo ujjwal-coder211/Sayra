@@ -337,7 +337,11 @@
             dot.style.background = st.dot; dot.classList.toggle('blink', d.state === 'running');
             document.getElementById('cc-status-title').textContent = st.title;
             document.getElementById('cc-status-title').style.color = st.color;
-            document.getElementById('cc-status-sub').textContent = st.sub;
+            let sub = st.sub;
+            if ((d.state === 'offline' || d.state === 'unlinked') && d.debug) {
+                sub += `  [URL: ${d.debug.base_url || '(not set)'}${d.debug.last_error ? ' · ' + d.debug.last_error : ''}]`;
+            }
+            document.getElementById('cc-status-sub').textContent = sub;
             const h = d.health || {};
             setHealthDot('h-db', h.db); setHealthDot('h-llm', h.llm); setHealthDot('h-n8n', h.n8n);
             // header pill

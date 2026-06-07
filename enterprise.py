@@ -34,8 +34,13 @@ VALID_AGENTS = (
 )
 
 
+# Diagnostics — aakhri request ka error yaad rakhte hain taaki misconfig
+# (galat ENTERPRISE_API_URL) turant pakad sakein.
+_LAST_ERROR: str = ""
+
+
 def _base_url() -> str:
-    return (os.environ.get("ENTERPRISE_API_URL", "") or "").rstrip("/")
+    return (os.environ.get("ENTERPRISE_API_URL", "") or "").strip().rstrip("/")
 
 
 def _api_key() -> str:
@@ -59,16 +64,17 @@ def _get(path: str, timeout: int = 20, retries: int = 1):
     Railway cold-start (service so jata hai) pe pehli request slow/fail ho
     sakti hai, isliye retry karte hain taaki dashboard "offline" galat na dikhaye.
     """
+    global _LAST_ERROR
     if not is_configured():
         return None
-    last_exc = None
     for attempt in range(retries + 1):
         try:
             res = requests.get(f"{_base_url()}{path}", headers=_headers(), timeout=timeout)
             res.raise_for_status()
+            _LAST_ERROR = ""
             return res.json()
         except Exception as exc:  # noqa: BLE001
-            last_exc = exc
+            _LAST_ERROR = f"{type(exc).__name__}: {str(exc)[:200]}"
     return None
 
 
@@ -367,6 +373,10 @@ def get_overview() -> dict:
         "running": running,
         "state": state,
         "state_label": label,
+        "debug": {
+            "base_url": _base_url() or "(not set)",
+            "last_error": _LAST_ERROR,
+        },
         "health": {
             "db": db_ok,
             "llm": bool(info.get("llm_configured")),
