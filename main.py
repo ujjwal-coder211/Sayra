@@ -209,6 +209,12 @@ class SairaUltimateMachine:
             ]
         ):
             return enterprise.format_status()
+        if any(k in q for k in ["profit", "revenue", "kamai", "कमाई", "मुनाफ", "paisa", "earning"]):
+            return enterprise.format_finance()
+        if any(k in q for k in ["opportunit", "मौका", "मौके", "kya bechna", "kya bech"]):
+            return enterprise.format_opportunities()
+        if any(k in q for k in ["advice pending", "advice chahiye", "kya approve", "pending advice"]):
+            return enterprise.format_advice()
 
         triggers = [
             "delegate",
@@ -227,10 +233,15 @@ class SairaUltimateMachine:
         ]
         agent_map = {
             "research": ["research", "market", "रिसर्च", "बाजार", "competitor"],
+            "opportunity": ["opportunity", "monetiz", "मौका", "kya bechna"],
             "strategy": ["strategy", "plan", "रणनीति", "स्ट्रेटजी", "roadmap"],
+            "product": ["product", "feature spec", "solution", "प्रोडक्ट", "offer"],
             "dev": ["dev", "develop", "code", "build", "डेव", "कोड", "feature"],
+            "marketing": ["marketing", "content", "campaign", "मार्केटिंग", "ad"],
             "sales": ["sales", "outreach", "email", "lead gen", "सेल्स", "proposal"],
             "delivery": ["delivery", "deliver", "client", "डिलीवरी", "handoff", "qa"],
+            "finance": ["finance", "pricing", "profit", "फाइनेंस", "cost", "margin"],
+            "support": ["support", "ticket", "सपोर्ट", "help desk"],
         }
         if any(t in q for t in triggers):
             for atype, kws in agent_map.items():

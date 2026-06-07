@@ -6,6 +6,7 @@ import requests
 
 import speech_service
 import groq_config
+import enterprise
 
 app = Flask(__name__)
 
@@ -108,6 +109,47 @@ def status():
 @app.route("/health/groq")
 def health_groq():
     return jsonify(groq_config.test_groq_connection())
+
+
+# --- Command Center (Aitotech company) — dashboard COMPANY tab ke liye ---
+@app.route("/enterprise/overview")
+def enterprise_overview():
+    """Workflow + profit + advice + opportunities — sab ek call me."""
+    return jsonify(enterprise.get_overview())
+
+
+@app.route("/enterprise/advice/<advice_id>/answer", methods=["POST"])
+def enterprise_answer_advice(advice_id):
+    """Master ki advice agents tak (human -> agents)."""
+    data = request.get_json(silent=True) or {}
+    decision = (data.get("decision") or "").strip()
+    response = (data.get("response") or "").strip()
+    if not decision:
+        return jsonify({"ok": False, "message": "Decision chahiye."}), 400
+    return jsonify(enterprise.answer_advice(advice_id, decision, response))
+
+
+@app.route("/enterprise/pipeline", methods=["POST"])
+def enterprise_start_pipeline():
+    """Naya autonomous pipeline shuru karo."""
+    data = request.get_json(silent=True) or {}
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"ok": False, "message": "Idea/title chahiye."}), 400
+    return jsonify(
+        enterprise.start_pipeline(
+            title,
+            market=data.get("market") or None,
+            region=data.get("region") or None,
+            notes=data.get("notes") or None,
+        )
+    )
+
+
+@app.route("/enterprise/tick", methods=["POST"])
+def enterprise_tick():
+    """Orchestrator ko ek batch chalao (agents aage badhein)।"""
+    return jsonify(enterprise.run_tick())
 
 
 @app.route("/speech/status")

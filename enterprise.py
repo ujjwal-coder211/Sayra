@@ -20,7 +20,18 @@ import os
 
 import requests
 
-VALID_AGENTS = ("research", "strategy", "dev", "sales", "delivery")
+VALID_AGENTS = (
+    "research",
+    "opportunity",
+    "strategy",
+    "product",
+    "dev",
+    "marketing",
+    "sales",
+    "delivery",
+    "finance",
+    "support",
+)
 
 
 def _base_url() -> str:
@@ -40,6 +51,31 @@ def _headers() -> dict:
     if _api_key():
         h["x-api-key"] = _api_key()
     return h
+
+
+def _get(path: str, timeout: int = 20):
+    """GET helper — error par None/[] safely."""
+    if not is_configured():
+        return None
+    try:
+        res = requests.get(f"{_base_url()}{path}", headers=_headers(), timeout=timeout)
+        res.raise_for_status()
+        return res.json()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _post(path: str, body: dict, timeout: int = 30):
+    if not is_configured():
+        return None
+    try:
+        res = requests.post(
+            f"{_base_url()}{path}", json=body, headers=_headers(), timeout=timeout
+        )
+        res.raise_for_status()
+        return res.json()
+    except Exception:  # noqa: BLE001
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -165,4 +201,140 @@ def short_status() -> str:
         return "Enterprise: not linked"
     pending = len([t for t in list_tasks(limit=50) if t.get("status") == "pending"])
     leads = len(get_leads(limit=50))
-    return f"Aitotech enterprise: LINKED | pending tasks: {pending} | leads: {leads}"
+    advice = len(list_advice(limit=50))
+    return (
+        f"Aitotech enterprise: LINKED | pending tasks: {pending} | "
+        f"leads: {leads} | advice needed: {advice}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Command Center (workflow + profit + human-in-the-loop) — dashboard ke liye
+# ---------------------------------------------------------------------------
+def get_pipelines(limit: int = 10) -> list[dict]:
+    """Workflow timeline — tasks grouped by pipeline."""
+    data = _get("/pipelines") or []
+    return data[:limit] if isinstance(data, list) else []
+
+
+def get_finance() -> dict:
+    """Profit summary (projected + actual)."""
+    return _get("/finance/summary") or {}
+
+
+def get_opportunities(limit: int = 10) -> list[dict]:
+    """Opportunity agent ke paisa-banane wale findings."""
+    data = _get("/opportunities") or []
+    return data[:limit] if isinstance(data, list) else []
+
+
+def get_deals(limit: int = 10) -> list[dict]:
+    data = _get("/deals") or []
+    return data[:limit] if isinstance(data, list) else []
+
+
+def list_advice(status: str = "pending", limit: int = 20) -> list[dict]:
+    """Sayra ke advice requests — jahan Master ki zaroorat hai."""
+    data = _get(f"/advice?status={status}") or []
+    return data[:limit] if isinstance(data, list) else []
+
+
+def answer_advice(advice_id: str, decision: str, response: str = "") -> dict:
+    """Master ki advice agents tak bhejo (human -> agents)."""
+    res = _post(
+        f"/advice/{advice_id}/answer",
+        {"decision": decision, "response": response},
+    )
+    return res or {"ok": False, "message": "Advice bhejne me dikkat (enterprise link check karein)."}
+
+
+def start_pipeline(
+    title: str,
+    market: str | None = None,
+    region: str | None = None,
+    notes: str | None = None,
+) -> dict:
+    """Pura autonomous pipeline (research -> ... -> sales) shuru karo."""
+    res = _post(
+        "/pipeline",
+        {
+            "title": title,
+            "start_agent": "research",
+            "market": market,
+            "region": region,
+            "notes": notes,
+            "priority": 7,
+        },
+    )
+    return res or {"ok": False, "message": "Pipeline start nahi hua (enterprise link check karein)."}
+
+
+def run_tick() -> dict:
+    """Orchestrator ko ek batch chalao."""
+    return _post("/orchestrator/tick", {}) or {"processed": 0}
+
+
+def _money(n, currency: str = "INR") -> str:
+    try:
+        return f"₹{float(n or 0):,.0f}" if currency == "INR" else f"{float(n or 0):,.0f} {currency}"
+    except (TypeError, ValueError):
+        return str(n)
+
+
+def format_finance() -> str:
+    """Profit summary chat me dikhane ke liye (Master ko)।"""
+    if not is_configured():
+        return "⚠️ Master, Aitotech enterprise abhi link nahi hai."
+    f = get_finance()
+    if not f:
+        return "📊 Master, abhi profit data nahi mila (deals add karein)."
+    cur = f.get("currency", "INR")
+    return "\n".join(
+        [
+            "💰 Aitotech — profit report:",
+            f"  • Projected profit: {_money(f.get('projected_profit'), cur)}",
+            f"  • Actual profit: {_money(f.get('actual_profit'), cur)}",
+            f"  • Actual revenue: {_money(f.get('actual_revenue'), cur)}",
+            f"  • Deals: {f.get('deal_count', 0)} (won: {f.get('won_count', 0)})",
+        ]
+    )
+
+
+def format_opportunities() -> str:
+    if not is_configured():
+        return "⚠️ Enterprise link nahi hai."
+    opps = get_opportunities()
+    if not opps:
+        return "🔍 Master, abhi koi opportunity nahi. Ek pipeline shuru karwaun?"
+    lines = ["🎯 Paisa-banane wali opportunities:"]
+    for o in opps:
+        lines.append(f"  • [{o.get('status')}] {o.get('title')}")
+    return "\n".join(lines)
+
+
+def format_advice() -> str:
+    if not is_configured():
+        return "⚠️ Enterprise link nahi hai."
+    adv = list_advice()
+    if not adv:
+        return "✅ Master, abhi aapki kahin zaroorat nahi — sab smooth chal raha hai."
+    lines = ["💬 Master, in par aapki advice chahiye:"]
+    for a in adv:
+        lines.append(f"  • {a.get('question')}")
+    lines.append("(Dashboard → COMPANY tab se approve/reject kar sakte ho.)")
+    return "\n".join(lines)
+
+
+def get_overview() -> dict:
+    """Dashboard Command Center ke liye sab ek saath."""
+    info = _get("/") or {}
+    return {
+        "linked": is_configured(),
+        "info": info,
+        "finance": get_finance(),
+        "pipelines": get_pipelines(limit=8),
+        "advice": list_advice(limit=20),
+        "opportunities": get_opportunities(limit=6),
+        "leads": get_leads(limit=8),
+        "deals": get_deals(limit=6),
+    }

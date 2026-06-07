@@ -23,6 +23,24 @@
         #chat-hub::-webkit-scrollbar-thumb { background: var(--neon); }
         
         canvas { width: 100% !important; height: 40px !important; }
+
+        /* Tabs */
+        .tab-btn { font-family: 'Orbitron', sans-serif; font-size: 10px; padding: 7px 16px; border-radius: 9px; border: 1px solid rgba(34,211,238,0.2); background: rgba(15,23,42,0.6); color: #67e8f9; cursor: pointer; transition: all .15s; }
+        .tab-btn.active-tab { background: #0891b2; color: #000; border-color: #22d3ee; }
+        .tab-btn .badge-count { background:#ef4444; color:#fff; border-radius:999px; font-size:8px; padding:1px 6px; margin-left:6px; }
+
+        /* Status chips */
+        .chip { font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.3); text-transform: capitalize; white-space: nowrap; }
+        .chip.pending { color:#fbbf24; border-color:rgba(251,191,36,.4); }
+        .chip.in_progress { color:#38bdf8; border-color:rgba(56,189,248,.5); background:rgba(56,189,248,.1); }
+        .chip.completed { color:#34d399; border-color:rgba(52,211,153,.5); background:rgba(52,211,153,.1); }
+        .chip.failed { color:#f87171; border-color:rgba(248,113,113,.5); }
+        .arrow { color:#475569; font-size:11px; margin:0 1px; }
+        .cc-input { width:100%; background:rgba(2,6,23,.6); border:1px solid rgba(34,211,238,.2); border-radius:8px; padding:8px 10px; color:#e2f6fb; font-size:12px; font-family:'Rajdhani',sans-serif; }
+        .cc-btn { font-family:'Orbitron',sans-serif; font-size:10px; padding:7px 12px; border-radius:8px; background:#0891b2; color:#000; cursor:pointer; border:none; }
+        .cc-btn.ghost { background:transparent; border:1px solid rgba(34,211,238,.3); color:#67e8f9; }
+        #company-view::-webkit-scrollbar { width:3px; }
+        #company-view::-webkit-scrollbar-thumb { background:var(--neon); }
     </style>
 </head>
 <body class="p-2 md:p-4 gap-3">
@@ -44,7 +62,12 @@
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-3 overflow-hidden">
+    <nav class="flex gap-2 shrink-0 px-1 mt-1">
+        <button id="tab-console" class="tab-btn active-tab" onclick="switchView('console')">🛰 CONSOLE</button>
+        <button id="tab-company" class="tab-btn" onclick="switchView('company')">🏢 COMPANY <span id="advice-badge" class="badge-count hidden">0</span></button>
+    </nav>
+
+    <main id="console-view" class="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-3 overflow-hidden">
         
         <aside class="flex flex-row lg:flex-col gap-3 shrink-0">
             <div class="glass-panel p-3 rounded-xl relative overflow-hidden flex-1 lg:flex-none lg:h-64">
@@ -108,6 +131,69 @@
             <p id="speech-hint" class="text-[9px] text-cyan-700/80 text-center shrink-0 px-2"></p>
         </section>
     </main>
+
+    <!-- ===================== COMPANY (Command Center) ===================== -->
+    <div id="company-view" class="hidden flex-1 overflow-y-auto flex flex-col gap-3 pb-4">
+
+        <!-- Profit cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
+            <div class="glass-panel rounded-xl p-3">
+                <p class="text-[8px] uppercase opacity-50">Projected profit</p>
+                <p id="cc-proj-profit" class="text-lg font-bold text-cyan-300">₹0</p>
+            </div>
+            <div class="glass-panel rounded-xl p-3">
+                <p class="text-[8px] uppercase opacity-50">Actual profit</p>
+                <p id="cc-act-profit" class="text-lg font-bold text-green-400">₹0</p>
+            </div>
+            <div class="glass-panel rounded-xl p-3">
+                <p class="text-[8px] uppercase opacity-50">Actual revenue</p>
+                <p id="cc-act-rev" class="text-lg font-bold text-white">₹0</p>
+            </div>
+            <div class="glass-panel rounded-xl p-3">
+                <p class="text-[8px] uppercase opacity-50">Deals (won)</p>
+                <p id="cc-deals" class="text-lg font-bold text-white">0</p>
+            </div>
+        </div>
+
+        <!-- Sayra advice inbox -->
+        <div id="cc-advice-wrap" class="glass-panel rounded-xl p-3 hidden shrink-0" style="border-color:rgba(168,85,247,.4)">
+            <h3 class="orbitron text-[10px] mb-2 text-purple-300 border-b border-purple-900/40 pb-1">💬 SAYRA — MASTER KI ADVICE CHAHIYE</h3>
+            <div id="cc-advice-list" class="space-y-2"></div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-3">
+            <!-- Workflow timeline -->
+            <div class="glass-panel rounded-xl p-3">
+                <h3 class="orbitron text-[10px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">🔄 WORKFLOW — AGENT PIPELINES</h3>
+                <div id="cc-pipelines" class="space-y-2 text-xs"><p class="opacity-40 text-[11px]">Loading…</p></div>
+            </div>
+
+            <!-- Right column: opportunities + leads -->
+            <div class="flex flex-col gap-3">
+                <div class="glass-panel rounded-xl p-3">
+                    <h3 class="orbitron text-[10px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">🎯 OPPORTUNITIES</h3>
+                    <div id="cc-opps" class="space-y-1 text-xs"><p class="opacity-40 text-[11px]">—</p></div>
+                </div>
+                <div class="glass-panel rounded-xl p-3">
+                    <h3 class="orbitron text-[10px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">📥 LEADS</h3>
+                    <div id="cc-leads" class="space-y-1 text-xs"><p class="opacity-40 text-[11px]">—</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start pipeline -->
+        <div class="glass-panel rounded-xl p-3 shrink-0">
+            <h3 class="orbitron text-[10px] mb-2 text-cyan-500 border-b border-cyan-900 pb-1">🚀 NAYA PIPELINE SHURU KAREIN</h3>
+            <div class="flex flex-col md:flex-row gap-2">
+                <input id="cc-pp-title" class="cc-input flex-[2]" placeholder="Idea: SMB ke liye invoice automation">
+                <input id="cc-pp-market" class="cc-input flex-1" placeholder="Market (optional)">
+                <input id="cc-pp-region" class="cc-input flex-1" placeholder="Region" value="India">
+                <button class="cc-btn shrink-0" onclick="startPipeline()">+ START</button>
+                <button class="cc-btn ghost shrink-0" onclick="runTick()">⚡ RUN AGENTS</button>
+            </div>
+            <p id="cc-msg" class="text-[10px] text-cyan-600 mt-2"></p>
+        </div>
+    </div>
 
     <script src="/static/js/speech.js"></script>
     <script>
@@ -218,6 +304,145 @@
             chat.scrollTop = chat.scrollHeight;
         }
         document.getElementById('query-input').addEventListener('keypress', (e) => e.key === 'Enter' && executeCommand());
+
+        // ===================== COMMAND CENTER (COMPANY) =====================
+        let companyTimer = null;
+
+        function money(n) {
+            const v = Number(n || 0);
+            try { return '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: 0 }); }
+            catch (_) { return '₹' + v; }
+        }
+
+        function switchView(v) {
+            const isCompany = v === 'company';
+            document.getElementById('console-view').classList.toggle('hidden', isCompany);
+            document.getElementById('company-view').classList.toggle('hidden', !isCompany);
+            document.getElementById('tab-console').classList.toggle('active-tab', !isCompany);
+            document.getElementById('tab-company').classList.toggle('active-tab', isCompany);
+            if (isCompany) {
+                loadCompany();
+                if (!companyTimer) companyTimer = setInterval(loadCompany, 8000);
+            } else if (companyTimer) {
+                clearInterval(companyTimer); companyTimer = null;
+            }
+        }
+
+        async function loadCompany() {
+            try {
+                const res = await fetch('/enterprise/overview');
+                const d = await res.json();
+                renderFinance(d.finance || {});
+                renderAdvice(d.advice || []);
+                renderPipelines(d.pipelines || []);
+                renderList('cc-opps', (d.opportunities || []).map(o => `[${o.status}] ${o.title}`));
+                renderList('cc-leads', (d.leads || []).map(l => `${l.name || l.email || 'Unknown'} · ${l.status}`));
+            } catch (_) {
+                document.getElementById('cc-msg').textContent = 'Enterprise se connect nahi hua (ENTERPRISE_API_URL check karein).';
+            }
+        }
+
+        function renderFinance(f) {
+            document.getElementById('cc-proj-profit').textContent = money(f.projected_profit);
+            document.getElementById('cc-act-profit').textContent = money(f.actual_profit);
+            document.getElementById('cc-act-rev').textContent = money(f.actual_revenue);
+            document.getElementById('cc-deals').textContent = `${f.deal_count || 0} (${f.won_count || 0} won)`;
+        }
+
+        function renderAdvice(list) {
+            const wrap = document.getElementById('cc-advice-wrap');
+            const el = document.getElementById('cc-advice-list');
+            const badge = document.getElementById('advice-badge');
+            if (!list.length) {
+                wrap.classList.add('hidden');
+                badge.classList.add('hidden');
+                el.innerHTML = '';
+                return;
+            }
+            wrap.classList.remove('hidden');
+            badge.classList.remove('hidden');
+            badge.textContent = list.length;
+            el.innerHTML = list.map(a => {
+                const opts = (a.options && a.options.length ? a.options : ['Approve & continue', 'Reject']);
+                const btns = opts.map(o => {
+                    const ghost = o.toLowerCase().includes('reject') ? 'ghost' : '';
+                    return `<button class="cc-btn ${ghost}" onclick="answerAdvice('${a.id}', this)">${escapeHtml(o)}</button>`;
+                }).join('');
+                return `<div class="bg-slate-900/60 border border-purple-900/30 rounded-lg p-2.5">
+                    <div class="text-xs text-purple-100 mb-1">${escapeHtml(a.question || '')}</div>
+                    ${a.context ? `<div class="text-[10px] opacity-50 max-h-20 overflow-auto mb-2 whitespace-pre-wrap">${escapeHtml(a.context.slice(0, 500))}…</div>` : ''}
+                    <textarea id="adv-${a.id}" class="cc-input mb-2" rows="2" placeholder="Master ki advice agents ke liye (optional)…"></textarea>
+                    <div class="flex gap-2 flex-wrap">${btns}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderPipelines(list) {
+            const el = document.getElementById('cc-pipelines');
+            if (!list.length) { el.innerHTML = '<p class="opacity-40 text-[11px]">Abhi koi pipeline nahi — neeche se ek shuru karein.</p>'; return; }
+            el.innerHTML = list.map(p => {
+                const chips = (p.steps || []).map((s, i) =>
+                    `<span class="chip ${s.status}">${escapeHtml(s.agent_type)}</span>${i < p.steps.length - 1 ? '<span class="arrow">→</span>' : ''}`
+                ).join('');
+                return `<div class="bg-slate-900/40 border border-cyan-900/30 rounded-lg p-2">
+                    <div class="font-bold text-[11px] text-cyan-200 mb-1.5 truncate">${escapeHtml(p.title || 'Pipeline')}</div>
+                    <div class="flex flex-wrap items-center gap-1">${chips}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderList(id, items) {
+            const el = document.getElementById(id);
+            if (!items.length) { el.innerHTML = '<p class="opacity-40 text-[11px]">—</p>'; return; }
+            el.innerHTML = items.map(t => `<div class="text-[11px] text-cyan-100 border-b border-cyan-900/20 pb-1">${escapeHtml(t)}</div>`).join('');
+        }
+
+        async function answerAdvice(id, btn) {
+            const decision = btn.textContent.trim();
+            const ta = document.getElementById('adv-' + id);
+            const response = ta ? ta.value.trim() : '';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/enterprise/advice/${id}/answer`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ decision, response })
+                });
+                const d = await res.json();
+                document.getElementById('cc-msg').textContent = d.message || 'Advice bhej di.';
+            } catch (_) {
+                document.getElementById('cc-msg').textContent = 'Advice bhejne me dikkat.';
+            }
+            loadCompany();
+        }
+
+        async function startPipeline() {
+            const title = document.getElementById('cc-pp-title').value.trim();
+            if (!title) { document.getElementById('cc-msg').textContent = 'Pehle idea likhein.'; return; }
+            const body = {
+                title,
+                market: document.getElementById('cc-pp-market').value.trim(),
+                region: document.getElementById('cc-pp-region').value.trim()
+            };
+            const res = await fetch('/enterprise/pipeline', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            const d = await res.json();
+            document.getElementById('cc-msg').textContent = d.message || (d.ok ? 'Pipeline shuru!' : 'Pipeline start nahi hua.');
+            document.getElementById('cc-pp-title').value = '';
+            loadCompany();
+        }
+
+        async function runTick() {
+            document.getElementById('cc-msg').textContent = 'Agents chal rahe hain…';
+            try {
+                const res = await fetch('/enterprise/tick', { method: 'POST' });
+                const d = await res.json();
+                document.getElementById('cc-msg').textContent = `Orchestrator ne ${d.processed || 0} task process kiye.`;
+            } catch (_) {
+                document.getElementById('cc-msg').textContent = 'Orchestrator tick fail.';
+            }
+            loadCompany();
+        }
     </script>
 </body>
 </html>
