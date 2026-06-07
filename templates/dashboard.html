@@ -197,6 +197,10 @@
             </div>
             <div class="flex flex-col gap-3">
                 <div class="glass glow-edge rounded-2xl p-3 md:p-4">
+                    <h3 class="sec-title text-cyan-400">🔭 PROSPECTS (auto-found)</h3>
+                    <div id="cc-prospects" class="space-y-1 text-xs"><p class="opacity-40 text-[11px]">—</p></div>
+                </div>
+                <div class="glass glow-edge rounded-2xl p-3 md:p-4">
                     <h3 class="sec-title text-cyan-400">🎯 OPPORTUNITIES</h3>
                     <div id="cc-opps" class="space-y-1 text-xs"><p class="opacity-40 text-[11px]">—</p></div>
                 </div>
@@ -207,9 +211,21 @@
             </div>
         </div>
 
-        <!-- Start pipeline -->
+        <!-- Autonomous growth -->
+        <div class="glass glow-edge rounded-2xl p-3 md:p-4 shrink-0" style="border-color:rgba(52,211,153,.3)">
+            <h3 class="sec-title text-green-400" style="border-color:rgba(52,211,153,.25)">🌱 AUTONOMOUS GROWTH</h3>
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <p id="cc-growth-info" class="text-[11px] opacity-70">Company khud market dhoondh ke client laati hai.</p>
+                <div class="flex gap-2">
+                    <input id="cc-grow-market" class="cc-input" style="width:220px" placeholder="Market (khaali = config se)">
+                    <button class="cc-btn shrink-0" style="background:linear-gradient(135deg,#10b981,#059669)" onclick="startGrowth()">🌱 GROW NOW</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start pipeline / fulfillment -->
         <div class="glass glow-edge rounded-2xl p-3 md:p-4 shrink-0">
-            <h3 class="sec-title text-cyan-400">🚀 NAYA PIPELINE SHURU KAREIN</h3>
+            <h3 class="sec-title text-cyan-400">🚀 MANUAL PIPELINE</h3>
             <div class="flex flex-col md:flex-row gap-2">
                 <input id="cc-pp-title" class="cc-input flex-[2]" placeholder="Idea: SMB ke liye invoice automation">
                 <input id="cc-pp-market" class="cc-input flex-1" placeholder="Market (optional)">
@@ -358,6 +374,8 @@
                 renderFinance(d.finance || {});
                 renderAdvice(d.advice || []);
                 renderPipelines(d.pipelines || [], d.state);
+                renderGrowth(d.growth || {});
+                renderList('cc-prospects', (d.prospects || []).map(p => `[${p.status}] ${p.business_name}${p.region ? ' · ' + p.region : ''}`));
                 renderList('cc-opps', (d.opportunities || []).map(o => `[${o.status}] ${o.title}`));
                 renderList('cc-leads', (d.leads || []).map(l => `${l.name || l.email || 'Unknown'} · ${l.status}`));
             } catch (_) {
@@ -441,6 +459,28 @@
                 document.getElementById('cc-msg').textContent = d.message || (d.ok ? 'Pipeline shuru!' : 'Pipeline start nahi hua.');
                 document.getElementById('cc-pp-title').value = '';
             } catch (_) { document.getElementById('cc-msg').textContent = 'Pipeline start fail (engine offline?).'; }
+            loadCompany();
+        }
+
+        function renderGrowth(g) {
+            const el = document.getElementById('cc-growth-info');
+            if (!el) return;
+            const on = g.auto_growth ? 'ON' : 'OFF';
+            const markets = (g.markets && g.markets.length) ? g.markets.join(', ') : 'koi market set nahi';
+            const pay = g.payments_configured ? 'Razorpay ✅' : 'Razorpay ❌ (keys daalein)';
+            el.textContent = `Auto-growth: ${on} · Markets: ${markets} · Active: ${g.active_pipelines || 0}/${g.max_active || 0} · ${pay}`;
+        }
+
+        async function startGrowth() {
+            const market = document.getElementById('cc-grow-market').value.trim();
+            document.getElementById('cc-msg').textContent = 'Naya prospecting cycle shuru ho raha…';
+            try {
+                const res = await fetch('/enterprise/growth', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ market }) });
+                const d = await res.json();
+                document.getElementById('cc-msg').textContent = d.started
+                    ? `🌱 Scout chalu (${d.market || 'market'}) — agents khud client dhoondhenge.`
+                    : (d.reason || 'Growth shuru nahi hua.');
+            } catch (_) { document.getElementById('cc-msg').textContent = 'Growth start fail.'; }
             loadCompany();
         }
 

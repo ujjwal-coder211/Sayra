@@ -152,6 +152,35 @@ def enterprise_tick():
     return jsonify(enterprise.run_tick())
 
 
+@app.route("/enterprise/growth", methods=["POST"])
+def enterprise_growth():
+    """Autonomous prospecting cycle shuru karo (company khud client dhoondhe)।"""
+    data = request.get_json(silent=True) or {}
+    return jsonify(enterprise.start_growth(market=data.get("market") or None))
+
+
+@app.route("/enterprise/fulfillment", methods=["POST"])
+def enterprise_fulfillment():
+    """Client agree — fulfillment pipeline (requirements → ... → delivery) shuru।"""
+    data = request.get_json(silent=True) or {}
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"ok": False, "message": "Client/deal title chahiye."}), 400
+    try:
+        amount = float(data.get("amount") or 0)
+    except (TypeError, ValueError):
+        amount = 0
+    return jsonify(
+        enterprise.start_fulfillment(
+            title,
+            client_name=data.get("client_name") or None,
+            client_email=data.get("client_email") or None,
+            amount=amount,
+            notes=data.get("notes") or None,
+        )
+    )
+
+
 @app.route("/speech/status")
 def speech_status():
     return jsonify(speech_service.speech_capabilities())

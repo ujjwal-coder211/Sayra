@@ -345,6 +345,47 @@ def orchestrator_status() -> dict:
     return _get("/orchestrator/status") or {}
 
 
+def growth_status() -> dict:
+    """Autonomous growth (scout) status."""
+    return _get("/growth/status") or {}
+
+
+def get_prospects(limit: int = 10) -> list[dict]:
+    data = _get("/prospects") or []
+    return data[:limit] if isinstance(data, list) else []
+
+
+def get_demos(limit: int = 10) -> list[dict]:
+    data = _get("/demos") or []
+    return data[:limit] if isinstance(data, list) else []
+
+
+def start_growth(market: str | None = None) -> dict:
+    """Ek naya autonomous prospecting cycle shuru karo."""
+    body = {"market": market} if market else {}
+    return _post("/growth/tick", body) or {"started": 0}
+
+
+def start_fulfillment(
+    title: str,
+    client_name: str | None = None,
+    client_email: str | None = None,
+    amount: float = 0,
+    notes: str | None = None,
+) -> dict:
+    """Client agree kar gaya — fulfillment (requirements → ... → delivery) shuru."""
+    return _post(
+        "/fulfillment/start",
+        {
+            "title": title,
+            "client_name": client_name,
+            "client_email": client_email,
+            "amount": amount,
+            "notes": notes,
+        },
+    ) or {"ok": False, "message": "Fulfillment start nahi hua."}
+
+
 def get_overview() -> dict:
     """Dashboard Command Center ke liye sab ek saath + health status."""
     # `/` health call ko cold-start ke liye lamba timeout + retries do —
@@ -387,6 +428,9 @@ def get_overview() -> dict:
         "pipelines": get_pipelines(limit=8),
         "advice": list_advice(limit=20),
         "opportunities": get_opportunities(limit=6),
+        "prospects": get_prospects(limit=8),
+        "demos": get_demos(limit=6),
+        "growth": growth_status(),
         "leads": get_leads(limit=8),
         "deals": get_deals(limit=6),
     }
